@@ -42,6 +42,7 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+	defer db.Close()
 
 	var films []Film
 	cond := map[string]interface{}{"kind": []string{"CDR", "ZDE"}}
