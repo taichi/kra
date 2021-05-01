@@ -1,0 +1,52 @@
+{
+  "antlr4.generation": {
+    "mode": "external",
+    "language": "Go",
+    "listeners": false,
+    "visitors": true,
+    "outputDir": "."
+  },
+  "antlr4.debug": {
+    "visualParseTreeHorizontal": true,
+    "visualParseTreeClustered": false
+  },
+  "antlr4.format": {
+    "alignTrailingComments": false,
+    "allowShortBlocksOnASingleLine": true,
+    "breakBeforeBraces": false,
+    "columnLimit": 150,
+    "continuationIndentWidth": 2,
+    "indentWidth": 2,
+    "keepEmptyLinesAtTheStartOfBlocks": false,
+    "maxEmptyLinesToKeep": 1,
+    "reflowComments": false,
+    "spaceBeforeAssignmentOperators": true,
+    "tabWidth": 2,
+    "useTab": false,
+    "alignColons": "none",
+    "singleLineOverrulesHangingColon": true,
+    "allowShortRulesOnASingleLine": true,
+    "alignSemicolons": "none",
+    "breakBeforeParens": false,
+    "ruleInternalsOnSingleLine": false,
+    "minEmptyLines": 0,
+    "groupedAlignments": true,
+    "alignFirstTokens": false,
+    "alignLexerCommands": false,
+    "alignActions": false,
+    "alignLabels": true,
+    "alignTrailers": false
+  },
+  "gopls": {
+    "local": "github.com/taichi/kra"
+  },
+  "go.buildTags": "test",
+  "go.testFlags": [
+    "-v"
+  ],
+  "cSpell.ignoreWords": [
+    "qmark"
+  ],
+  "go.formatTool": "goimports",
+  "go.lintTool": "golangci-lint",
+}
