@@ -23,20 +23,10 @@ import (
 	"github.com/taichi/kra"
 )
 
-func analyze(core *kra.Core, query string, args ...interface{}) (rawQuery string, vars []interface{}, err error) {
-	if analyzer, err := core.Parse(query); err != nil {
-		return "", nil, err
-	} else if resolver, err := core.NewResolver(args...); err != nil {
-		return "", nil, err
-	} else {
-		return analyzer.Analyze(resolver)
-	}
-}
-
 type ExecFn func(context.Context, string, ...interface{}) (sql.Result, error)
 
 func doExec(core *kra.Core, exec ExecFn, ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-	if rawQuery, bindArgs, err := analyze(core, query, args...); err != nil {
+	if rawQuery, bindArgs, err := core.Analyze(query, args...); err != nil {
 		return nil, err
 	} else {
 		return exec(ctx, rawQuery, bindArgs...)
@@ -79,7 +69,7 @@ func doPrepare(core *kra.Core, prepare PrepareFn, ctx context.Context, query str
 type QueryFn func(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
 
 func doQuery(core *kra.Core, query QueryFn, ctx context.Context, queryString string, args ...interface{}) (*Rows, error) {
-	if rawQuery, bindArgs, err := analyze(core, queryString, args...); err != nil {
+	if rawQuery, bindArgs, err := core.Analyze(queryString, args...); err != nil {
 		return nil, err
 	} else if rows, err := query(ctx, rawQuery, bindArgs...); err != nil {
 		return nil, err
