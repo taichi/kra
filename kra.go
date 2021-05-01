@@ -16,11 +16,12 @@ package kra
 
 import (
 	"database/sql"
+	"errors"
 )
 
 type QueryAnalyzer interface {
+	Verify(ValueResolver) error
 	Analyze(ValueResolver) (query string, vars []interface{}, err error)
-	DynamicParameters() []string
 }
 
 type ValueResolver interface {
@@ -40,3 +41,5 @@ type Core struct {
 	NewResolver    func(args ...interface{}) (ValueResolver, error)
 	NewTransformer func() Transformer
 }
+
+var ErrLackOfQueryParameters = errors.New("require example parameters for prepare query with IN operator")

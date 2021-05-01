@@ -17,8 +17,6 @@ package sql
 import (
 	"context"
 	"database/sql"
-	"errors"
-	"fmt"
 
 	"github.com/taichi/kra"
 )
@@ -35,34 +33,19 @@ func doExec(core *kra.Core, exec ExecFn, ctx context.Context, query string, args
 
 type PrepareFn func(context.Context, string) (*sql.Stmt, error)
 
-var ErrLackOfQueryParameters = errors.New("require example parameters for prepare query with IN operator")
-
 func doPrepare(core *kra.Core, prepare PrepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
 	if query, err := core.Parse(query); err != nil {
 		return nil, err
+	} else if resolver, err := core.NewResolver(examples...); err != nil {
+		return nil, err
+	} else if err := query.Verify(resolver); err != nil {
+		return nil, err
+	} else if rawQuery, _, err := query.Analyze(resolver); err != nil {
+		return nil, err
+	} else if stmt, err := prepare(ctx, rawQuery); err != nil {
+		return nil, err
 	} else {
-		resolver, err := core.NewResolver(examples...)
-		if err != nil {
-			return nil, err
-		}
-		var requires []string
-		for _, name := range query.DynamicParameters() {
-			if val, err := resolver.ByName(name); err != nil || val == nil {
-				requires = append(requires, name)
-			}
-		}
-
-		if 0 < len(requires) {
-			return nil, fmt.Errorf("require parameters: %v %w", requires, ErrLackOfQueryParameters)
-		}
-
-		if rawQuery, _, err := query.Analyze(resolver); err != nil {
-			return nil, err
-		} else if stmt, err := prepare(ctx, rawQuery); err != nil {
-			return nil, err
-		} else {
-			return &Stmt{stmt, core, query}, nil
-		}
+		return &Stmt{stmt, core, query}, nil
 	}
 }
 

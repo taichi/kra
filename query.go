@@ -47,6 +47,20 @@ func NewQuery(src string) (*Query, error) {
 	return &Query{visitor.parts, visitor.dynamicParameters}, nil
 }
 
+func (query *Query) Verify(resolver ValueResolver) error {
+	var notFound []string
+	for _, name := range query.dynamicParameters {
+		if val, err := resolver.ByName(name); err != nil || val == nil {
+			notFound = append(notFound, name)
+		}
+	}
+
+	if 0 < len(notFound) {
+		return fmt.Errorf("require parameters: %v %w", notFound, ErrLackOfQueryParameters)
+	}
+	return nil
+}
+
 func (query *Query) Analyze(resolver ValueResolver) (rawQuery string, vars []interface{}, err error) {
 	state := ResolvingState{0, &strings.Builder{}, nil}
 
@@ -57,10 +71,6 @@ func (query *Query) Analyze(resolver ValueResolver) (rawQuery string, vars []int
 	}
 
 	return strings.TrimSpace(state.query.String()), state.values, nil
-}
-
-func (query *Query) DynamicParameters() []string {
-	return query.dynamicParameters
 }
 
 type ResolvingState struct {
