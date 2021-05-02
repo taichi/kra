@@ -41,11 +41,11 @@ type TestTable struct {
 
 func setup(t *testing.T) (*TestTable, error) {
 
-	config := kra.NewCore(kra.PostgreSQL)
+	core := kra.NewCore(kra.PostgreSQL)
 
 	table := newTestTable()
 
-	rawDb, err := Open(config, "pgx", "user=test password=test host=localhost port=5432 database=test sslmode=disable")
+	rawDb, err := Open(core, "pgx", "user=test password=test host=localhost port=5432 database=test sslmode=disable")
 	if err != nil {
 		return nil, err
 	}

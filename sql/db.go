@@ -87,8 +87,8 @@ type DB struct {
 	core *kra.Core
 }
 
-func NewDB(db *sql.DB, config *kra.Core) *DB {
-	return &DB{db, config}
+func NewDB(db *sql.DB, core *kra.Core) *DB {
+	return &DB{db, core}
 }
 
 func (db *DB) DB() *sql.DB {

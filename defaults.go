@@ -105,7 +105,7 @@ func (resolver *DefaultValueResolver) ByName(name string) (interface{}, error) {
 	return val, nil
 }
 
-func DefaultNewResolver(config *Core, args ...interface{}) (ValueResolver, error) {
+func DefaultNewResolver(core *Core, args ...interface{}) (ValueResolver, error) {
 	result := map[string]interface{}{}
 	maps := []map[string]interface{}{}
 
@@ -133,7 +133,7 @@ func DefaultNewResolver(config *Core, args ...interface{}) (ValueResolver, error
 		}
 	}
 
-	return &DefaultValueResolver{config.BindVar, len(args), args, result}, nil
+	return &DefaultValueResolver{core.BindVar, len(args), args, result}, nil
 }
 
 func isStruct(arg interface{}) bool {
