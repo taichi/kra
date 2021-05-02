@@ -147,9 +147,9 @@ func isStruct(arg interface{}) bool {
 
 type DefaultTransformer struct{}
 
-func (*DefaultTransformer) Transform(src *sql.Rows, dst interface{}) error {
+func (*DefaultTransformer) Transform(src Rows, dst interface{}) error {
 	return dbscan.ScanOne(dst, src)
 }
-func (*DefaultTransformer) TransformAll(src *sql.Rows, dst interface{}) error {
+func (*DefaultTransformer) TransformAll(src Rows, dst interface{}) error {
 	return dbscan.ScanAll(dst, src)
 }

@@ -15,7 +15,6 @@
 package kra
 
 import (
-	"database/sql"
 	"errors"
 )
 
@@ -30,9 +29,17 @@ type ValueResolver interface {
 	ByName(name string) (interface{}, error)
 }
 
+type Rows interface {
+	Close() error
+	Err() error
+	Next() bool
+	Columns() ([]string, error)
+	Scan(dest ...interface{}) error
+}
+
 type Transformer interface {
-	Transform(src *sql.Rows, dst interface{}) error
-	TransformAll(src *sql.Rows, dst interface{}) error
+	Transform(src Rows, dst interface{}) error
+	TransformAll(src Rows, dst interface{}) error
 }
 
 type Core struct {
