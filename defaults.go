@@ -110,19 +110,18 @@ func DefaultNewResolver(core *Core, args ...interface{}) (ValueResolver, error) 
 	maps := []map[string]interface{}{}
 
 	for _, arg := range args {
-		if isStruct(arg) {
-			var newmap map[string]interface{}
-			if err := mapstructure.Decode(arg, &newmap); err != nil {
-				return nil, err
-			} else {
-				maps = append(maps, newmap)
-			}
-		} else {
-			switch val := arg.(type) {
-			case map[string]interface{}:
-				maps = append(maps, val)
-			case sql.NamedArg:
-				result[strings.ToLower(val.Name)] = val.Value
+		switch val := arg.(type) {
+		case map[string]interface{}:
+			maps = append(maps, val)
+		case sql.NamedArg:
+			result[strings.ToLower(val.Name)] = val.Value
+		default:
+			if isStruct(arg) {
+				if newmap, err := toMap(arg); err != nil {
+					return nil, err
+				} else {
+					maps = append(maps, newmap)
+				}
 			}
 		}
 	}
@@ -134,6 +133,26 @@ func DefaultNewResolver(core *Core, args ...interface{}) (ValueResolver, error) 
 	}
 
 	return &DefaultValueResolver{core.BindVar, len(args), args, result}, nil
+}
+
+func toMap(arg interface{}) (map[string]interface{}, error) {
+	var output map[string]interface{}
+	config := &mapstructure.DecoderConfig{
+		Metadata: nil,
+		Result:   &output,
+		TagName:  "db",
+	}
+
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := decoder.Decode(arg); err != nil {
+		return nil, err
+	}
+
+	return output, nil
 }
 
 func isStruct(arg interface{}) bool {
