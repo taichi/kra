@@ -16,7 +16,8 @@ package pgx
 
 import (
 	"context"
-	"fmt"
+	"crypto/sha256"
+	"encoding/hex"
 
 	"github.com/jackc/pgconn"
 	pgx "github.com/jackc/pgx/v4"
@@ -36,9 +37,7 @@ func doExec(core *kra.Core, exec ExecFn, ctx context.Context, query string, args
 
 type PrepareFn func(ctx context.Context, name, sql string) (sd *pgconn.StatementDescription, err error)
 
-func doPrepare(core *kra.Core, conn *Conn, prepare PrepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
-	name := fmt.Sprintf("kra_%d", conn.psCount)
-	conn.psCount++
+func doPrepare(core *kra.Core, conn *pgx.Conn, prepare PrepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
 	if query, err := core.Parse(query); err != nil {
 		return nil, err
 	} else if resolver, err := core.NewResolver(examples...); err != nil {
@@ -47,11 +46,21 @@ func doPrepare(core *kra.Core, conn *Conn, prepare PrepareFn, ctx context.Contex
 		return nil, err
 	} else if rawQuery, _, err := query.Analyze(resolver); err != nil {
 		return nil, err
+	} else if name, err := toName(rawQuery); err != nil {
+		return nil, err
 	} else if stmt, err := prepare(ctx, name, rawQuery); err != nil {
 		return nil, err
 	} else {
-		return &Stmt{stmt, conn.conn, core, query}, nil
+		return &Stmt{stmt, conn, core, query}, nil
 	}
+}
+
+func toName(query string) (string, error) {
+	hash := sha256.New()
+	if _, err := hash.Write([]byte(query)); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
 type QueryFn func(ctx context.Context, query string, args ...interface{}) (pgx.Rows, error)

@@ -25,9 +25,8 @@ import (
 )
 
 type Conn struct {
-	conn    *pgx.Conn
-	core    *kra.Core
-	psCount int64
+	conn *pgx.Conn
+	core *kra.Core
 }
 
 func Connect(ctx context.Context, connString string) (*Conn, error) {
@@ -39,7 +38,7 @@ func Connect(ctx context.Context, connString string) (*Conn, error) {
 }
 
 func NewConn(conn *pgx.Conn, core *kra.Core) *Conn {
-	return &Conn{conn, core, 0}
+	return &Conn{conn, core}
 }
 
 func (conn *Conn) Conn() *pgx.Conn {
@@ -54,13 +53,13 @@ func (conn *Conn) Begin(ctx context.Context) (*Tx, error) {
 	if tx, err := conn.conn.Begin(ctx); err != nil {
 		return nil, err
 	} else {
-		return &Tx{tx, conn, conn.core}, nil
+		return &Tx{tx, conn.conn, conn.core}, nil
 	}
 }
 
 func (conn *Conn) BeginFunc(ctx context.Context, f func(*Tx) error) error {
 	return conn.conn.BeginFunc(ctx, func(tx pgx.Tx) error {
-		return f(&Tx{tx, conn, conn.core})
+		return f(&Tx{tx, conn.conn, conn.core})
 	})
 }
 
@@ -68,13 +67,13 @@ func (conn *Conn) BeginTx(ctx context.Context, txOptions pgx.TxOptions) (*Tx, er
 	if tx, err := conn.conn.BeginTx(ctx, txOptions); err != nil {
 		return nil, err
 	} else {
-		return &Tx{tx, conn, conn.core}, nil
+		return &Tx{tx, conn.conn, conn.core}, nil
 	}
 }
 
 func (conn *Conn) BeginTxFunc(ctx context.Context, txOptions pgx.TxOptions, f func(*Tx) error) error {
 	return conn.conn.BeginTxFunc(ctx, txOptions, func(tx pgx.Tx) error {
-		return f(&Tx{tx, conn, conn.core})
+		return f(&Tx{tx, conn.conn, conn.core})
 	})
 }
 
@@ -91,7 +90,7 @@ func (conn *Conn) Ping(ctx context.Context) error {
 }
 
 func (conn *Conn) Prepare(ctx context.Context, sql string, examples ...interface{}) (*Stmt, error) {
-	return doPrepare(conn.core, conn, conn.conn.Prepare, ctx, sql, examples...)
+	return doPrepare(conn.core, conn.conn, conn.conn.Prepare, ctx, sql, examples...)
 }
 
 func (conn *Conn) Query(ctx context.Context, sql string, args ...interface{}) (*Rows, error) {
@@ -113,7 +112,7 @@ func (conn *Conn) FindAll(ctx context.Context, dst interface{}, query string, ar
 
 type Tx struct {
 	tx   pgx.Tx
-	conn *Conn
+	conn *pgx.Conn
 	core *kra.Core
 }
 
