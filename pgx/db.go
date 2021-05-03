@@ -20,9 +20,26 @@ import (
 
 	"github.com/jackc/pgconn"
 	pgx "github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 
 	"github.com/taichi/kra"
 )
+
+func Open(ctx context.Context, connString string) (*DB, error) {
+	config, err := pgxpool.ParseConfig(connString)
+	if err != nil {
+		return nil, err
+	}
+	return OpenConfig(ctx, config)
+}
+
+func OpenConfig(ctx context.Context, config *pgxpool.Config) (*DB, error) {
+	if pool, err := pgxpool.ConnectConfig(ctx, config); err != nil {
+		return nil, err
+	} else {
+		return NewDB(pool, kra.NewCore(kra.PostgreSQL)), nil
+	}
+}
 
 type Conn struct {
 	conn *pgx.Conn
@@ -108,6 +125,80 @@ func (conn *Conn) Find(ctx context.Context, dst interface{}, query string, args 
 
 func (conn *Conn) FindAll(ctx context.Context, dst interface{}, query string, args ...interface{}) error {
 	return doFindAll(conn.core, conn.conn.Query, ctx, dst, query, args...)
+}
+
+type DB struct {
+	pool *pgxpool.Pool
+	core *kra.Core
+}
+
+func NewDB(db *pgxpool.Pool, core *kra.Core) *DB {
+	return &DB{db, core}
+}
+
+func (db *DB) Pool() *pgxpool.Pool {
+	return db.pool
+}
+
+func (db *DB) Close() error {
+	db.pool.Close()
+	return nil
+}
+
+func (db *DB) Begin(ctx context.Context) (*Tx, error) {
+	return db.BeginTx(ctx, pgx.TxOptions{})
+}
+
+func (db *DB) BeginTx(ctx context.Context, opts pgx.TxOptions) (*Tx, error) {
+	if tx, err := db.pool.BeginTx(ctx, opts); err != nil {
+		return nil, err
+	} else {
+		return &Tx{tx, tx.Conn(), db.core}, nil
+	}
+}
+
+func (db *DB) Ping(ctx context.Context) error {
+	return db.pool.Ping(ctx)
+}
+
+func (db *DB) Exec(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
+	return doExec(db.core, db.pool.Exec, ctx, query, args...)
+}
+
+func (db *DB) CopyFrom(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error) {
+	return db.pool.CopyFrom(ctx, tableName, columnNames, rowSrc)
+}
+
+func (db *DB) SendBatch(ctx context.Context, batch *Batch) *BatchResults {
+	results := db.pool.SendBatch(ctx, batch.batch)
+	return &BatchResults{results, db.core}
+}
+
+func (db *DB) Prepare(ctx context.Context, query string, examples ...interface{}) (*PooledStmt, error) {
+	conn, err := db.pool.Acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	pooled := conn.Conn()
+
+	if stmt, err := doPrepare(db.core, pooled, pooled.Prepare, ctx, query, examples...); err != nil {
+		return nil, err
+	} else {
+		return &PooledStmt{stmt, conn}, nil
+	}
+}
+
+func (db *DB) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
+	return doQuery(db.core, db.pool.Query, ctx, query, args...)
+}
+
+func (db *DB) Find(ctx context.Context, dst interface{}, query string, args ...interface{}) error {
+	return doFind(db.core, db.pool.Query, ctx, dst, query, args...)
+}
+
+func (db *DB) FindAll(ctx context.Context, dst interface{}, query string, args ...interface{}) error {
+	return doFindAll(db.core, db.pool.Query, ctx, dst, query, args...)
 }
 
 type Tx struct {
@@ -216,6 +307,28 @@ func (stmt *Stmt) Query(ctx context.Context, args ...interface{}) (*Rows, error)
 	} else {
 		return &Rows{rows, stmt.core.NewTransformer()}, nil
 	}
+}
+
+type PooledStmt struct {
+	delegate *Stmt
+	conn     *pgxpool.Conn
+}
+
+func (stmt *PooledStmt) Stmt() *pgconn.StatementDescription {
+	return stmt.delegate.stmt
+}
+
+func (stmt *PooledStmt) Close(ctx context.Context) error {
+	defer stmt.conn.Release()
+	return stmt.delegate.Close(ctx)
+}
+
+func (stmt *PooledStmt) Exec(ctx context.Context, args ...interface{}) (pgconn.CommandTag, error) {
+	return stmt.delegate.Exec(ctx, args...)
+}
+
+func (stmt *PooledStmt) Query(ctx context.Context, args ...interface{}) (*Rows, error) {
+	return stmt.delegate.Query(ctx, args...)
 }
 
 type Rows struct {
