@@ -35,7 +35,7 @@ func doExec(core *kra.Core, exec ExecFn, ctx context.Context, query string, args
 	}
 }
 
-type PrepareFn func(ctx context.Context, name, sql string) (sd *pgconn.StatementDescription, err error)
+type PrepareFn func(ctx context.Context, name, query string) (sd *pgconn.StatementDescription, err error)
 
 func doPrepare(core *kra.Core, conn *pgx.Conn, prepare PrepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
 	if query, err := core.Parse(query); err != nil {

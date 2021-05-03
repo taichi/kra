@@ -81,20 +81,20 @@ func (conn *Conn) CopyFrom(ctx context.Context, tableName pgx.Identifier, column
 	return conn.conn.CopyFrom(ctx, tableName, columnNames, rowSrc)
 }
 
-func (conn *Conn) Exec(ctx context.Context, sql string, args ...interface{}) (pgconn.CommandTag, error) {
-	return doExec(conn.core, conn.conn.Exec, ctx, sql, args...)
+func (conn *Conn) Exec(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
+	return doExec(conn.core, conn.conn.Exec, ctx, query, args...)
 }
 
 func (conn *Conn) Ping(ctx context.Context) error {
 	return conn.conn.Ping(ctx)
 }
 
-func (conn *Conn) Prepare(ctx context.Context, sql string, examples ...interface{}) (*Stmt, error) {
-	return doPrepare(conn.core, conn.conn, conn.conn.Prepare, ctx, sql, examples...)
+func (conn *Conn) Prepare(ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
+	return doPrepare(conn.core, conn.conn, conn.conn.Prepare, ctx, query, examples...)
 }
 
-func (conn *Conn) Query(ctx context.Context, sql string, args ...interface{}) (*Rows, error) {
-	return doQuery(conn.core, conn.conn.Query, ctx, sql, args...)
+func (conn *Conn) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
+	return doQuery(conn.core, conn.conn.Query, ctx, query, args...)
 }
 
 func (conn *Conn) SendBatch(ctx context.Context, batch *Batch) *BatchResults {
@@ -155,16 +155,16 @@ func (tx *Tx) LargeObjects() pgx.LargeObjects {
 	return tx.tx.LargeObjects()
 }
 
-func (tx *Tx) Prepare(ctx context.Context, sql string, examples ...interface{}) (*Stmt, error) {
-	return doPrepare(tx.core, tx.conn, tx.tx.Prepare, ctx, sql, examples...)
+func (tx *Tx) Prepare(ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
+	return doPrepare(tx.core, tx.conn, tx.tx.Prepare, ctx, query, examples...)
 }
 
-func (tx *Tx) Exec(ctx context.Context, sql string, args ...interface{}) (pgconn.CommandTag, error) {
-	return doExec(tx.core, tx.tx.Exec, ctx, sql, args...)
+func (tx *Tx) Exec(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
+	return doExec(tx.core, tx.tx.Exec, ctx, query, args...)
 }
 
-func (tx *Tx) Query(ctx context.Context, sql string, args ...interface{}) (*Rows, error) {
-	return doQuery(tx.core, tx.tx.Query, ctx, sql, args...)
+func (tx *Tx) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
+	return doQuery(tx.core, tx.tx.Query, ctx, query, args...)
 }
 
 func (tx *Tx) Find(ctx context.Context, dst interface{}, query string, args ...interface{}) error {
