@@ -16,12 +16,12 @@ package kra
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 
 	"github.com/georgysavva/scany/dbscan"
-	"github.com/mitchellh/mapstructure"
 )
 
 type DB uint8
@@ -48,6 +48,7 @@ func NewCore(db DB) *Core {
 		return trans
 	}
 	core.TagName = "db"
+	core.Repository = NewTypeRepository(core)
 
 	return core
 }
@@ -82,11 +83,13 @@ func (db DB) toBindVar() BindVar {
 	panic("unknown DB")
 }
 
+type ResolveFn func(string) (interface{}, bool, error)
+
 type DefaultValueResolver struct {
 	bindVar        BindVar
 	originalLength int
 	original       []interface{}
-	values         map[string]interface{}
+	values         []ResolveFn
 }
 
 func (resolver *DefaultValueResolver) BindVar(index int) string {
@@ -102,62 +105,77 @@ func (resolver *DefaultValueResolver) ByIndex(index int) (interface{}, error) {
 }
 
 func (resolver *DefaultValueResolver) ByName(name string) (interface{}, error) {
-	val := resolver.values[strings.ToLower(name)]
-	return val, nil
+	condition := strings.ToLower(name)
+	for _, fn := range resolver.values {
+		if val, ok, err := fn(condition); err != nil {
+			return nil, err
+		} else if ok {
+			return val, nil
+		}
+	}
+	return nil, nil
 }
 
 func NewDefaultResolver(core *Core, args ...interface{}) (ValueResolver, error) {
-	result := map[string]interface{}{}
-	maps := []map[string]interface{}{}
+	var values []ResolveFn
 
 	for _, arg := range args {
 		switch val := arg.(type) {
 		case map[string]interface{}:
-			maps = append(maps, val)
+			values = append(values, toMapFn(val))
 		case sql.NamedArg:
-			result[strings.ToLower(val.Name)] = val.Value
+			values = append(values, toNamedArgFn(val))
 		default:
 			if isStruct(arg) {
-				if newmap, err := toMap(arg); err != nil {
+				if fn, err := toStructFn(core, arg); err != nil {
 					return nil, err
 				} else {
-					maps = append(maps, newmap)
+					values = append(values, fn)
 				}
 			}
 		}
 	}
 
-	for _, m := range maps {
-		for key, value := range m {
-			result[strings.ToLower(key)] = value
-		}
-	}
-
-	return &DefaultValueResolver{core.BindVar, len(args), args, result}, nil
+	return &DefaultValueResolver{core.BindVar, len(args), args, values}, nil
 }
 
-func toMap(arg interface{}) (map[string]interface{}, error) {
-	var output map[string]interface{}
-	config := &mapstructure.DecoderConfig{
-		Metadata: nil,
-		Result:   &output,
-		TagName:  "db",
+func toMapFn(arg map[string]interface{}) ResolveFn {
+	return func(name string) (interface{}, bool, error) {
+		res, ok := arg[name]
+		return res, ok, nil
 	}
+}
 
-	decoder, err := mapstructure.NewDecoder(config)
-	if err != nil {
+func toNamedArgFn(arg sql.NamedArg) ResolveFn {
+	return func(name string) (interface{}, bool, error) {
+		if strings.EqualFold(arg.Name, name) {
+			return arg.Value, true, nil
+		}
+		return nil, false, nil
+	}
+}
+
+func toStructFn(core *Core, arg interface{}) (ResolveFn, error) {
+	root := reflect.ValueOf(arg)
+	if def, err := core.Repository.Lookup(root.Type()); err != nil {
 		return nil, err
+	} else {
+		return func(name string) (interface{}, bool, error) {
+			if value, err := def.ByName(root, name); err != nil {
+				if errors.Is(err, ErrFieldUnexported) {
+					return nil, false, err
+				} else {
+					return nil, true, nil
+				}
+			} else {
+				return value.Interface(), true, nil
+			}
+		}, nil
 	}
-
-	if err := decoder.Decode(arg); err != nil {
-		return nil, err
-	}
-
-	return output, nil
 }
 
 func isStruct(arg interface{}) bool {
-	value := reflect.ValueOf(arg)
+	value := reflect.TypeOf(arg)
 	kind := value.Kind()
 	if kind == reflect.Ptr {
 		kind = value.Elem().Kind()
