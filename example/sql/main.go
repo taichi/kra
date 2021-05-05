@@ -67,11 +67,11 @@ func main() {
 		fmt.Println("prepare", err)
 		return
 	} else {
-		testdata := []map[string]interface{}{
-			{"code": "1111", "title": "aaaa", "did": 32, "dateprod": time.Now(), "kind": "CDR", "len": pgtype.Interval{Microseconds: 5400000000, Status: pgtype.Present}},
-			{"code": "2222", "title": "bbbb", "did": 34, "dateprod": time.Now(), "kind": "ZDE", "len": pgtype.Interval{Microseconds: 9000000000, Status: pgtype.Present}},
-			{"code": "3333", "title": "cccc", "did": 65, "dateprod": time.Now(), "kind": "IOM", "len": pgtype.Interval{Microseconds: 5400000000, Status: pgtype.Present}},
-			{"code": "4444", "title": "dddd", "did": 72, "dateprod": time.Now(), "kind": "ERW", "len": pgtype.Interval{Microseconds: 7200000000, Status: pgtype.Present}},
+		testdata := []Film{
+			{"1111", "aaaa", 32, time.Now(), "CDR", pgtype.Interval{Microseconds: 5400000000, Status: pgtype.Present}},
+			{"2222", "bbbb", 34, time.Now(), "ZDE", pgtype.Interval{Microseconds: 9000000000, Status: pgtype.Present}},
+			{"3333", "cccc", 65, time.Now(), "IOM", pgtype.Interval{Microseconds: 5400000000, Status: pgtype.Present}},
+			{"4444", "dddd", 72, time.Now(), "ERW", pgtype.Interval{Microseconds: 7200000000, Status: pgtype.Present}},
 		}
 		for _, data := range testdata {
 			if _, err := stmt.Exec(ctx, data); err != nil {
