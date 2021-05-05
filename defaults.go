@@ -47,6 +47,7 @@ func NewCore(db DB) *Core {
 	core.NewTransformer = func() Transformer {
 		return trans
 	}
+	core.TagName = "db"
 
 	return core
 }

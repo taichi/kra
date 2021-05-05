@@ -47,6 +47,7 @@ type Core struct {
 	Parse          func(query string) (QueryAnalyzer, error)
 	NewResolver    func(args ...interface{}) (ValueResolver, error)
 	NewTransformer func() Transformer
+	TagName        string
 }
 
 var ErrLackOfQueryParameters = errors.New("require example parameters for prepare query with IN operator")
