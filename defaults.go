@@ -40,7 +40,7 @@ func NewCore(db DB) *Core {
 		return NewQuery(s)
 	}
 	core.NewResolver = func(args ...interface{}) (ValueResolver, error) {
-		return DefaultNewResolver(core, args...)
+		return NewDefaultResolver(core, args...)
 	}
 
 	trans := &DefaultTransformer{}
@@ -105,7 +105,7 @@ func (resolver *DefaultValueResolver) ByName(name string) (interface{}, error) {
 	return val, nil
 }
 
-func DefaultNewResolver(core *Core, args ...interface{}) (ValueResolver, error) {
+func NewDefaultResolver(core *Core, args ...interface{}) (ValueResolver, error) {
 	result := map[string]interface{}{}
 	maps := []map[string]interface{}{}
 
