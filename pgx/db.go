@@ -119,12 +119,12 @@ func (conn *Conn) SendBatch(ctx context.Context, batch *Batch) *BatchResults {
 	return &BatchResults{results, conn.core}
 }
 
-func (conn *Conn) Find(ctx context.Context, dst interface{}, query string, args ...interface{}) error {
-	return doFind(conn.core, conn.conn.Query, ctx, dst, query, args...)
+func (conn *Conn) Find(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	return doFind(conn.core, conn.conn.Query, ctx, dest, query, args...)
 }
 
-func (conn *Conn) FindAll(ctx context.Context, dst interface{}, query string, args ...interface{}) error {
-	return doFindAll(conn.core, conn.conn.Query, ctx, dst, query, args...)
+func (conn *Conn) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	return doFindAll(conn.core, conn.conn.Query, ctx, dest, query, args...)
 }
 
 type DB struct {
@@ -193,12 +193,12 @@ func (db *DB) Query(ctx context.Context, query string, args ...interface{}) (*Ro
 	return doQuery(db.core, db.pool.Query, ctx, query, args...)
 }
 
-func (db *DB) Find(ctx context.Context, dst interface{}, query string, args ...interface{}) error {
-	return doFind(db.core, db.pool.Query, ctx, dst, query, args...)
+func (db *DB) Find(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	return doFind(db.core, db.pool.Query, ctx, dest, query, args...)
 }
 
-func (db *DB) FindAll(ctx context.Context, dst interface{}, query string, args ...interface{}) error {
-	return doFindAll(db.core, db.pool.Query, ctx, dst, query, args...)
+func (db *DB) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	return doFindAll(db.core, db.pool.Query, ctx, dest, query, args...)
 }
 
 type Tx struct {
@@ -258,12 +258,12 @@ func (tx *Tx) Query(ctx context.Context, query string, args ...interface{}) (*Ro
 	return doQuery(tx.core, tx.tx.Query, ctx, query, args...)
 }
 
-func (tx *Tx) Find(ctx context.Context, dst interface{}, query string, args ...interface{}) error {
-	return doFind(tx.core, tx.tx.Query, ctx, dst, query, args...)
+func (tx *Tx) Find(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	return doFind(tx.core, tx.tx.Query, ctx, dest, query, args...)
 }
 
-func (tx *Tx) FindAll(ctx context.Context, dst interface{}, query string, args ...interface{}) error {
-	return doFindAll(tx.core, tx.tx.Query, ctx, dst, query, args...)
+func (tx *Tx) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	return doFindAll(tx.core, tx.tx.Query, ctx, dest, query, args...)
 }
 
 type Stmt struct {
@@ -353,12 +353,12 @@ func (rows *Rows) Close() error {
 	return rows.rows.Err()
 }
 
-func (rows *Rows) Scan(dst interface{}) error {
-	return rows.transformer.Transform(&rowsAdapter{rows.rows}, dst)
+func (rows *Rows) Scan(dest interface{}) error {
+	return rows.transformer.Transform(&rowsAdapter{rows.rows}, dest)
 }
 
-func (rows *Rows) ScanAll(dst interface{}) error {
-	return rows.transformer.TransformAll(&rowsAdapter{rows.rows}, dst)
+func (rows *Rows) ScanAll(dest interface{}) error {
+	return rows.transformer.TransformAll(&rowsAdapter{rows.rows}, dest)
 }
 
 type rowsAdapter struct {
