@@ -16,12 +16,11 @@ package main
 
 import (
 	"context"
-	stdsql "database/sql"
+	"database/sql"
 	"fmt"
 	"time"
 
 	"github.com/jackc/pgtype"
-	stdpgx "github.com/jackc/pgx/v4"
 
 	"github.com/taichi/kra/pgx"
 )
@@ -62,20 +61,20 @@ func main() {
 		}
 	}()
 
-	values := [][]interface{}{
+	testdata := []Film{
 		{"1111", "aaaa", 32, time.Now(), "CDR", pgtype.Interval{Microseconds: 5400000000, Status: pgtype.Present}},
 		{"2222", "bbbb", 34, time.Now(), "ZDE", pgtype.Interval{Microseconds: 9000000000, Status: pgtype.Present}},
 		{"3333", "cccc", 65, time.Now(), "IOM", pgtype.Interval{Microseconds: 5400000000, Status: pgtype.Present}},
 		{"4444", "dddd", 72, time.Now(), "ERW", pgtype.Interval{Microseconds: 7200000000, Status: pgtype.Present}},
 	}
 
-	if _, err := db.CopyFrom(ctx, stdpgx.Identifier{"films"}, []string{"code", "title", "did", "date_prod", "kind", "len"}, stdpgx.CopyFromRows(values)); err != nil {
+	if _, err := db.CopyFrom(ctx, pgx.Identifier{"films"}, testdata); err != nil {
 		fmt.Println("CopyFrom", err)
 		return
 	}
 
 	var films []Film
-	if err := db.FindAll(ctx, &films, "SELECT * FROM films WHERE kind IN (:kind)", stdsql.NamedArg{Name: "kind", Value: []string{"CDR", "ZDE"}}); err != nil {
+	if err := db.FindAll(ctx, &films, "SELECT * FROM films WHERE kind IN (:kind)", sql.NamedArg{Name: "kind", Value: []string{"CDR", "ZDE"}}); err != nil {
 		fmt.Println("find", err)
 		return
 	}

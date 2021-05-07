@@ -33,6 +33,8 @@ func Open(ctx context.Context, connString string) (*DB, error) {
 	return OpenConfig(ctx, config)
 }
 
+type Identifier pgx.Identifier
+
 func OpenConfig(ctx context.Context, config *pgxpool.Config) (*DB, error) {
 	if pool, err := pgxpool.ConnectConfig(ctx, config); err != nil {
 		return nil, err
@@ -94,8 +96,8 @@ func (conn *Conn) BeginTxFunc(ctx context.Context, txOptions pgx.TxOptions, f fu
 	})
 }
 
-func (conn *Conn) CopyFrom(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error) {
-	return conn.conn.CopyFrom(ctx, tableName, columnNames, rowSrc)
+func (conn *Conn) CopyFrom(ctx context.Context, tableName Identifier, rowSrc interface{}) (int64, error) {
+	return doCopyFrom(conn.core, conn.conn.CopyFrom, ctx, tableName, rowSrc)
 }
 
 func (conn *Conn) Exec(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
@@ -165,8 +167,8 @@ func (db *DB) Exec(ctx context.Context, query string, args ...interface{}) (pgco
 	return doExec(db.core, db.pool.Exec, ctx, query, args...)
 }
 
-func (db *DB) CopyFrom(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error) {
-	return db.pool.CopyFrom(ctx, tableName, columnNames, rowSrc)
+func (db *DB) CopyFrom(ctx context.Context, tableName Identifier, rowSrc interface{}) (int64, error) {
+	return doCopyFrom(db.core, db.pool.CopyFrom, ctx, tableName, rowSrc)
 }
 
 func (db *DB) SendBatch(ctx context.Context, batch *Batch) *BatchResults {
@@ -233,8 +235,8 @@ func (tx *Tx) Rollback(ctx context.Context) error {
 	return tx.tx.Rollback(ctx)
 }
 
-func (tx *Tx) CopyFrom(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error) {
-	return tx.tx.CopyFrom(ctx, tableName, columnNames, rowSrc)
+func (tx *Tx) CopyFrom(ctx context.Context, tableName Identifier, rowSrc interface{}) (int64, error) {
+	return doCopyFrom(tx.core, tx.tx.CopyFrom, ctx, tableName, rowSrc)
 }
 
 func (tx *Tx) SendBatch(ctx context.Context, batch *Batch) *BatchResults {

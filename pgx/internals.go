@@ -18,6 +18,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
+	"fmt"
+	"reflect"
 
 	"github.com/jackc/pgconn"
 	pgx "github.com/jackc/pgx/v4"
@@ -93,4 +96,65 @@ func doFindAll(core *kra.Core, query QueryFn, ctx context.Context, dst interface
 		return err
 	}
 	return nil
+}
+
+type CopyFromFn func(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error)
+
+var ErrEmptySlice = errors.New("kra: empty slice")
+var ErrDifferentType = errors.New("kra: different type found")
+
+func doCopyFrom(core *kra.Core, copyFrom CopyFromFn, ctx context.Context, tableName Identifier, src interface{}) (int64, error) {
+	directValue := reflect.Indirect(reflect.ValueOf(src))
+
+	if directValue.Kind() != reflect.Slice {
+		return 0, fmt.Errorf("type=%v %w", directValue.Type(), kra.ErrNoSlice)
+	}
+
+	length := directValue.Len()
+	if length < 1 {
+		return 0, ErrEmptySlice
+	}
+
+	var elementType reflect.Type
+	var elementDef *kra.StructDef
+	var columnNames []string
+	var columnLength int
+	rowSrc := make([][]interface{}, length)
+	for index := 0; index < length; index++ {
+		element := directValue.Index(index)
+		if element.Kind() != reflect.Struct {
+			return 0, fmt.Errorf("type=%v %w", element.Kind(), kra.ErrUnsupportedValueType)
+		} else if elementType == nil {
+			elementType = element.Type()
+			if def, err := core.Repository.Lookup(elementType); err != nil {
+				return 0, err
+			} else {
+				elementDef = def
+			}
+			for col, def := range elementDef.Members {
+				if isCopyable(def) {
+					columnNames = append(columnNames, col)
+					columnLength++
+				}
+			}
+		} else if elementType != element.Type() {
+			return 0, fmt.Errorf("type=%v current=%v %w", elementType, element.Type(), ErrDifferentType)
+		}
+
+		values := make([]interface{}, columnLength)
+		for i, col := range columnNames {
+			if def, val, err := elementDef.ByName(element, col); err != nil {
+				return 0, err
+			} else if isCopyable(*def) {
+				values[i] = val.Interface()
+			}
+		}
+		rowSrc[index] = values
+	}
+
+	return copyFrom(ctx, pgx.Identifier(tableName), columnNames, pgx.CopyFromRows(rowSrc))
+}
+
+func isCopyable(def kra.FieldDef) bool {
+	return def.Unexported == false && def.Options["name"] != "-"
 }

@@ -67,7 +67,7 @@ var ErrUnsupportedValueType = errors.New("kra: unsupported value type")
 func (repo *TypeRepository) Traverse(target reflect.Type, history ...*StructDef) (*StructDef, error) {
 	targetType := Indirect(target)
 	if targetType.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("type=%s %w", targetType.Name(), ErrUnsupportedValueType)
+		return nil, fmt.Errorf("type=%v %w", targetType, ErrUnsupportedValueType)
 	}
 
 	length := targetType.NumField()
