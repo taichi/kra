@@ -40,11 +40,13 @@ type fixture struct {
 	TestValue string `db:"test_value"`
 }
 
+const connURL = "user=test password=test host=localhost port=5432 database=test sslmode=disable"
+
 func setup(t *testing.T) (*TestTable, error) {
 
 	table := newTestTable()
 
-	rawDb, err := Open(context.Background(), "user=test password=test host=localhost port=5432 database=test sslmode=disable")
+	rawDb, err := Open(context.Background(), connURL)
 	if err != nil {
 		return nil, err
 	}
@@ -200,4 +202,124 @@ func TestFindAllMap(t *testing.T) {
 
 	assert.Equal(t, 3, len(dstAry))
 	assert.Equal(t, "111", dstAry[0]["test_key"])
+}
+
+func TestStatementDuplicate_Different_Conn(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if err2 := insertData(t, table); err2 != nil {
+		t.Error(err2)
+		return
+	}
+	ctx := context.Background()
+	stmt, err := table.db.Prepare(ctx, table.findAll)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	conn, err := Connect(ctx, connURL)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	stmt2, err := conn.Prepare(ctx, table.findAll)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if err := stmt.Close(ctx); err != nil {
+		t.Error(err)
+		return
+	}
+
+	if rows, err := stmt2.Query(ctx); err != nil {
+		t.Error(err)
+		return
+	} else {
+		defer rows.Close()
+		assert.True(t, rows.Next())
+	}
+}
+
+func TestStatementDuplicate_Same_Conn(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if err2 := insertData(t, table); err2 != nil {
+		t.Error(err2)
+		return
+	}
+	ctx := context.Background()
+
+	conn, err := Connect(ctx, connURL)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer conn.Close(ctx)
+	stmt, err := conn.Prepare(ctx, table.findAll)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if err3 := stmt.Close(ctx); err3 != nil {
+		t.Error(err3)
+		return
+	}
+	stmt2, err := conn.Prepare(ctx, table.findAll)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if rows, err := stmt2.Query(ctx); err != nil {
+		t.Error(err)
+		return
+	} else {
+		defer rows.Close()
+		assert.True(t, rows.Next())
+	}
+}
+
+func TestStatementDuplicate_Same_Conn_Tx(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	ctx := context.Background()
+	conn, err := Connect(ctx, connURL)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer conn.Close(ctx)
+
+	if stmt, err := conn.Prepare(ctx, table.findAll); err != nil {
+		t.Error(err)
+		return
+	} else if err := stmt.Close(ctx); err != nil {
+		t.Error(err)
+		return
+	}
+
+	if tx, txErr := conn.Begin(ctx); txErr != nil {
+		t.Error(txErr)
+		return
+	} else {
+		if stmt, err := tx.Prepare(ctx, table.findAll); err != nil {
+			t.Error(err)
+			return
+		} else {
+			defer stmt.Close(ctx)
+			assert.Equal(t, conn.count, *tx.count)
+		}
+	}
 }

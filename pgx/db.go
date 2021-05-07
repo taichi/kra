@@ -44,8 +44,9 @@ func OpenConfig(ctx context.Context, config *pgxpool.Config) (*DB, error) {
 }
 
 type Conn struct {
-	conn *pgx.Conn
-	core *kra.Core
+	conn  *pgx.Conn
+	core  *kra.Core
+	count int
 }
 
 func Connect(ctx context.Context, connString string) (*Conn, error) {
@@ -57,7 +58,7 @@ func Connect(ctx context.Context, connString string) (*Conn, error) {
 }
 
 func NewConn(conn *pgx.Conn, core *kra.Core) *Conn {
-	return &Conn{conn, core}
+	return &Conn{conn, core, 0}
 }
 
 func (conn *Conn) Conn() *pgx.Conn {
@@ -72,13 +73,13 @@ func (conn *Conn) Begin(ctx context.Context) (*Tx, error) {
 	if tx, err := conn.conn.Begin(ctx); err != nil {
 		return nil, err
 	} else {
-		return &Tx{tx, conn.conn, conn.core}, nil
+		return &Tx{tx, conn.conn, conn.core, &conn.count}, nil
 	}
 }
 
 func (conn *Conn) BeginFunc(ctx context.Context, f func(*Tx) error) error {
 	return conn.conn.BeginFunc(ctx, func(tx pgx.Tx) error {
-		return f(&Tx{tx, conn.conn, conn.core})
+		return f(&Tx{tx, conn.conn, conn.core, &conn.count})
 	})
 }
 
@@ -86,13 +87,13 @@ func (conn *Conn) BeginTx(ctx context.Context, txOptions pgx.TxOptions) (*Tx, er
 	if tx, err := conn.conn.BeginTx(ctx, txOptions); err != nil {
 		return nil, err
 	} else {
-		return &Tx{tx, conn.conn, conn.core}, nil
+		return &Tx{tx, conn.conn, conn.core, &conn.count}, nil
 	}
 }
 
 func (conn *Conn) BeginTxFunc(ctx context.Context, txOptions pgx.TxOptions, f func(*Tx) error) error {
 	return conn.conn.BeginTxFunc(ctx, txOptions, func(tx pgx.Tx) error {
-		return f(&Tx{tx, conn.conn, conn.core})
+		return f(&Tx{tx, conn.conn, conn.core, &conn.count})
 	})
 }
 
@@ -109,7 +110,8 @@ func (conn *Conn) Ping(ctx context.Context) error {
 }
 
 func (conn *Conn) Prepare(ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
-	return doPrepare(conn.core, conn.conn, conn.conn.Prepare, ctx, query, examples...)
+	conn.count++
+	return doPrepare(conn.core, conn.conn, conn.count, conn.conn.Prepare, ctx, query, examples...)
 }
 
 func (conn *Conn) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
@@ -130,12 +132,13 @@ func (conn *Conn) FindAll(ctx context.Context, dest interface{}, query string, a
 }
 
 type DB struct {
-	pool *pgxpool.Pool
-	core *kra.Core
+	pool  *pgxpool.Pool
+	core  *kra.Core
+	count int
 }
 
 func NewDB(db *pgxpool.Pool, core *kra.Core) *DB {
-	return &DB{db, core}
+	return &DB{db, core, 0}
 }
 
 func (db *DB) Pool() *pgxpool.Pool {
@@ -155,7 +158,7 @@ func (db *DB) BeginTx(ctx context.Context, opts pgx.TxOptions) (*Tx, error) {
 	if tx, err := db.pool.BeginTx(ctx, opts); err != nil {
 		return nil, err
 	} else {
-		return &Tx{tx, tx.Conn(), db.core}, nil
+		return &Tx{tx, tx.Conn(), db.core, &db.count}, nil
 	}
 }
 
@@ -183,8 +186,8 @@ func (db *DB) Prepare(ctx context.Context, query string, examples ...interface{}
 	}
 
 	pooled := conn.Conn()
-
-	if stmt, err := doPrepare(db.core, pooled, pooled.Prepare, ctx, query, examples...); err != nil {
+	db.count++
+	if stmt, err := doPrepare(db.core, pooled, db.count, pooled.Prepare, ctx, query, examples...); err != nil {
 		return nil, err
 	} else {
 		return &PooledStmt{stmt, conn}, nil
@@ -204,9 +207,10 @@ func (db *DB) FindAll(ctx context.Context, dest interface{}, query string, args 
 }
 
 type Tx struct {
-	tx   pgx.Tx
-	conn *pgx.Conn
-	core *kra.Core
+	tx    pgx.Tx
+	conn  *pgx.Conn
+	core  *kra.Core
+	count *int
 }
 
 func (tx *Tx) Tx() pgx.Tx {
@@ -217,13 +221,13 @@ func (tx *Tx) Begin(ctx context.Context) (*Tx, error) {
 	if newone, err := tx.tx.Begin(ctx); err != nil {
 		return nil, err
 	} else {
-		return &Tx{newone, tx.conn, tx.core}, nil
+		return &Tx{newone, tx.conn, tx.core, tx.count}, nil
 	}
 }
 
 func (tx *Tx) BeginFunc(ctx context.Context, f func(*Tx) error) error {
 	return tx.tx.BeginFunc(ctx, func(newone pgx.Tx) error {
-		return f(&Tx{newone, tx.conn, tx.core})
+		return f(&Tx{newone, tx.conn, tx.core, tx.count})
 	})
 }
 
@@ -249,7 +253,8 @@ func (tx *Tx) LargeObjects() pgx.LargeObjects {
 }
 
 func (tx *Tx) Prepare(ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
-	return doPrepare(tx.core, tx.conn, tx.tx.Prepare, ctx, query, examples...)
+	*tx.count += 1
+	return doPrepare(tx.core, tx.conn, *tx.count, tx.tx.Prepare, ctx, query, examples...)
 }
 
 func (tx *Tx) Exec(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
