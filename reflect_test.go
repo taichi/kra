@@ -40,7 +40,7 @@ func TestStructDef_Simple(t *testing.T) {
 		return
 	}
 
-	if found, err := def.ByName(value, "bbbb"); err != nil {
+	if _, found, err := def.ByName(value, "bbbb"); err != nil {
 		t.Error(err)
 	} else if assert.NotNil(t, found) {
 		assert.Equal(t, "foo", found.Interface())
@@ -65,7 +65,7 @@ func TestStructDef_NamedByTag(t *testing.T) {
 		return
 	}
 
-	if value, err := def.ByName(value, "zzz"); err != nil {
+	if _, value, err := def.ByName(value, "zzz"); err != nil {
 		t.Error(err)
 	} else if assert.NotNil(t, value) {
 		assert.Equal(t, "foo", value.Interface())
@@ -88,7 +88,7 @@ func TestStructDef_Unexported(t *testing.T) {
 	if def, err := repo.Lookup(value.Type()); err != nil {
 		t.Error(err)
 	} else {
-		_, err := def.ByName(value, "dddd")
+		_, _, err := def.ByName(value, "dddd")
 		assert.ErrorIs(t, err, ErrFieldUnexported)
 	}
 }
@@ -109,7 +109,7 @@ func TestStructDef_NotFound(t *testing.T) {
 	if def, err := repo.Lookup(value.Type()); err != nil {
 		t.Error(err)
 	} else {
-		_, err := def.ByName(value, "zzz")
+		_, _, err := def.ByName(value, "zzz")
 		assert.ErrorIs(t, err, ErrFieldNotFound)
 	}
 }
@@ -138,11 +138,10 @@ func TestStructDef_Nested(t *testing.T) {
 	if def, err := repo.Lookup(value.Type()); err != nil {
 		t.Error(err)
 	} else {
-		if found, err := def.ByAllNames(value, []string{"eee.aa.bbbb", "eee.bb"}); err != nil {
+		if _, found, err := def.ByName(value, "eee.aa.bbbb"); err != nil {
 			t.Error(err)
 		} else {
-			assert.Equal(t, "foo", found[0].Interface())
-			assert.Equal(t, "bar", found[1].Interface())
+			assert.Equal(t, "foo", found.Interface())
 		}
 	}
 }
@@ -171,12 +170,12 @@ func TestStructDef_Nested_VisitBreak(t *testing.T) {
 	if def, err := repo.Lookup(value.Type()); err != nil {
 		t.Error(err)
 	} else {
-		if found, err := def.ByName(value, "eee.aa.bbbb"); err != nil {
+		if _, found, err := def.ByName(value, "eee.aa.bbbb"); err != nil {
 			t.Error(err)
 		} else {
 			assert.Nil(t, found.Interface())
 		}
-		if found, err := def.ByName(value, "aaa.bbbb"); err != nil {
+		if _, found, err := def.ByName(value, "aaa.bbbb"); err != nil {
 			t.Error(err)
 		} else {
 			assert.Nil(t, found.Interface())
@@ -207,7 +206,7 @@ func TestStructDef_Embedded(t *testing.T) {
 	value := reflect.ValueOf(fff)
 	if def, err := repo.Lookup(value.Type()); err != nil {
 		t.Error(err)
-	} else if found, err := def.ByName(value, "eee.bbbb"); err != nil {
+	} else if _, found, err := def.ByName(value, "eee.bbbb"); err != nil {
 		t.Error(err)
 	} else if assert.NotNil(t, found) {
 		assert.Equal(t, "foo", found.Interface())
@@ -238,12 +237,12 @@ func TestStructDef_Embedded_Multiple(t *testing.T) {
 	if def, err := repo.Lookup(value.Type()); err != nil {
 		t.Error(err)
 	} else {
-		if found, err := def.ByName(value, "bbbb"); err != nil {
+		if _, found, err := def.ByName(value, "bbbb"); err != nil {
 			t.Error(err)
 		} else if assert.NotNil(t, found) {
 			assert.Equal(t, "foo", found.Interface())
 		}
-		if found, err := def.ByName(value, "bb"); err != nil {
+		if _, found, err := def.ByName(value, "bb"); err != nil {
 			t.Error(err)
 		} else if assert.NotNil(t, found) {
 			assert.Equal(t, "bar", found.Interface())
@@ -271,12 +270,12 @@ func TestStructDef_Embedded_CacheHit(t *testing.T) {
 	if def, err := repo.Lookup(value.Type()); err != nil {
 		t.Error(err)
 	} else {
-		if found, err := def.ByName(value, "bbbb"); err != nil {
+		if _, found, err := def.ByName(value, "bbbb"); err != nil {
 			t.Error(err)
 		} else if assert.NotNil(t, found) {
 			assert.Equal(t, "foo", found.Interface())
 		}
-		if found, err := def.ByName(value, "optional.cccc"); err != nil {
+		if _, found, err := def.ByName(value, "optional.cccc"); err != nil {
 			t.Error(err)
 		} else {
 			assert.Nil(t, found.Interface())
@@ -307,7 +306,7 @@ func TestStructDef_Embedded_Nested(t *testing.T) {
 	value := reflect.ValueOf(fff)
 	if def, err := repo.Lookup(value.Type()); err != nil {
 		t.Error(err)
-	} else if found, err := def.ByName(value, "bbbb"); err != nil {
+	} else if _, found, err := def.ByName(value, "bbbb"); err != nil {
 		t.Error(err)
 	} else if assert.NotNil(t, found) {
 		assert.Equal(t, "foo", found.Interface())
@@ -338,12 +337,12 @@ func TestStructDef_Embedded_Tag(t *testing.T) {
 	if def, err := repo.Lookup(value.Type()); err != nil {
 		t.Error(err)
 	} else {
-		if found, err := def.ByName(value, "eee.bb"); err != nil {
+		if _, found, err := def.ByName(value, "eee.bb"); err != nil {
 			t.Error(err)
 		} else if assert.NotNil(t, found) {
 			assert.Equal(t, "bar", found.Interface())
 		}
-		if found, err := def.ByName(value, "eee.zzz"); err != nil {
+		if _, found, err := def.ByName(value, "eee.zzz"); err != nil {
 			t.Error(err)
 		} else if assert.NotNil(t, found) {
 			assert.Equal(t, 32, found.Interface())
@@ -374,7 +373,7 @@ func TestStructDef_Embedded_WithSameName(t *testing.T) {
 	if def, err := repo.Lookup(value.Type()); err != nil {
 		t.Error(err)
 	} else {
-		if found, err := def.ByName(value, "eee.aaaa"); err != nil {
+		if _, found, err := def.ByName(value, "eee.aaaa"); err != nil {
 			t.Error(err)
 		} else if assert.NotNil(t, found) {
 			assert.Equal(t, fff.Eee.Aaaa, found.Interface())
@@ -412,7 +411,7 @@ func TestStructDef_Recursive(t *testing.T) {
 	value := reflect.ValueOf(ggg)
 	if def, err := repo.Lookup(value.Type()); err != nil {
 		t.Error(err)
-	} else if found, err := def.ByName(value, "fff.eee.gg.fff.eee.aa.bbbb"); err != nil {
+	} else if _, found, err := def.ByName(value, "fff.eee.gg.fff.eee.aa.bbbb"); err != nil {
 		t.Error(err)
 	} else if assert.NotNil(t, found) {
 		assert.Equal(t, "bar", found.Interface())
@@ -424,4 +423,39 @@ func Test_Traverse(t *testing.T) {
 
 	_, err := repo.Lookup(reflect.TypeOf("33"))
 	assert.ErrorIs(t, err, ErrUnsupportedValueType)
+}
+
+func TestStructDef_FieldOptions(t *testing.T) {
+	type Aaaa struct {
+		Bbbb string `db:",foo=bar"`
+		Cccc int    `db:"-"`
+		dddd uint
+	}
+
+	aaa := Aaaa{"foo", 32, 11}
+	core := NewCore(PostgreSQL)
+	core.TagName = "db"
+	repo := NewTypeRepository(core)
+
+	value := reflect.ValueOf(aaa)
+	def, err := repo.Lookup(value.Type())
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if def, found, err := def.ByName(value, "bbbb"); err != nil {
+		t.Error(err)
+	} else if assert.NotNil(t, found) {
+		assert.Equal(t, "foo", found.Interface())
+		assert.Equal(t, "bar", def.Options["foo"])
+		assert.Equal(t, "", def.Options["name"])
+	}
+
+	if def, found, err := def.ByName(value, "cccc"); err != nil {
+		t.Error(err)
+	} else if assert.NotNil(t, found) {
+		assert.Equal(t, 32, found.Interface())
+		assert.Equal(t, "-", def.Options["name"])
+	}
 }

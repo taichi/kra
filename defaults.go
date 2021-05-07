@@ -161,7 +161,7 @@ func toStructFn(core *Core, arg interface{}) (ResolveFn, error) {
 		return nil, err
 	} else {
 		return func(name string) (interface{}, bool, error) {
-			if value, err := def.ByName(root, name); err != nil {
+			if _, value, err := def.ByName(root, name); err != nil {
 				if errors.Is(err, ErrFieldUnexported) {
 					return nil, false, err
 				} else {
