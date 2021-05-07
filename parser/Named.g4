@@ -47,7 +47,7 @@ inExpr: IN OPEN_PAREN parameter (COMMA parameter)* CLOSE_PAREN;
 
 parameter: namedParamter | qmarkParameter | dDecParameter | staticParameter;
 
-namedParamter: NAMED_PARAMETER;
+namedParamter: (AT | COLON) IDENTIFIER (DOT IDENTIFIER)*;
 
 qmarkParameter: QMARK;
 
@@ -81,7 +81,6 @@ IN: [iI] [nN];
 OPEN_PAREN: '(';
 CLOSE_PAREN: ')';
 
-NAMED_PARAMETER: [:@] IDENTIFIER+;
 QMARK: '?';
 DDEC: '$' DIGIT+;
 
@@ -99,6 +98,8 @@ fragment LETTER: UNICODE_LETTER | '_';
 fragment UNICODE_LETTER: [\p{L}];
 fragment UNICODE_DIGIT: [\p{Nd}];
 
+AT: '@';
+COLON: ':';
 SEMI: ';';
 DOT: '.';
 STAR: '*';

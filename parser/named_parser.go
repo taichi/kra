@@ -30,53 +30,57 @@ var _ = reflect.Copy
 var _ = strconv.Itoa
 
 var parserATN = []uint16{
-	3, 24715, 42794, 33075, 47597, 16764, 15335, 30598, 22884, 3, 19, 85, 4,
+	3, 24715, 42794, 33075, 47597, 16764, 15335, 30598, 22884, 3, 20, 92, 4,
 	2, 9, 2, 4, 3, 9, 3, 4, 4, 9, 4, 4, 5, 9, 5, 4, 6, 9, 6, 4, 7, 9, 7, 4,
 	8, 9, 8, 4, 9, 9, 9, 4, 10, 9, 10, 3, 2, 3, 2, 6, 2, 23, 10, 2, 13, 2,
 	14, 2, 24, 3, 2, 7, 2, 28, 10, 2, 12, 2, 14, 2, 31, 11, 2, 3, 2, 7, 2,
 	34, 10, 2, 12, 2, 14, 2, 37, 11, 2, 3, 3, 3, 3, 3, 3, 6, 3, 42, 10, 3,
 	13, 3, 14, 3, 43, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 7, 4, 51, 10, 4, 12, 4,
 	14, 4, 54, 11, 4, 3, 4, 3, 4, 3, 5, 3, 5, 3, 5, 3, 5, 5, 5, 62, 10, 5,
-	3, 6, 3, 6, 3, 7, 3, 7, 3, 8, 3, 8, 3, 9, 3, 9, 3, 10, 3, 10, 3, 10, 5,
-	10, 75, 10, 10, 3, 10, 3, 10, 3, 10, 3, 10, 3, 10, 3, 10, 5, 10, 83, 10,
-	10, 3, 10, 2, 2, 11, 2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 3, 4, 2, 15, 15,
-	18, 18, 2, 92, 2, 20, 3, 2, 2, 2, 4, 41, 3, 2, 2, 2, 6, 45, 3, 2, 2, 2,
-	8, 61, 3, 2, 2, 2, 10, 63, 3, 2, 2, 2, 12, 65, 3, 2, 2, 2, 14, 67, 3, 2,
-	2, 2, 16, 69, 3, 2, 2, 2, 18, 82, 3, 2, 2, 2, 20, 29, 5, 4, 3, 2, 21, 23,
-	7, 16, 2, 2, 22, 21, 3, 2, 2, 2, 23, 24, 3, 2, 2, 2, 24, 22, 3, 2, 2, 2,
+	3, 6, 3, 6, 3, 6, 3, 6, 7, 6, 68, 10, 6, 12, 6, 14, 6, 71, 11, 6, 3, 7,
+	3, 7, 3, 8, 3, 8, 3, 9, 3, 9, 3, 10, 3, 10, 3, 10, 5, 10, 82, 10, 10, 3,
+	10, 3, 10, 3, 10, 3, 10, 3, 10, 3, 10, 5, 10, 90, 10, 10, 3, 10, 2, 2,
+	11, 2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 4, 3, 2, 15, 16, 4, 2, 14, 14, 19,
+	19, 2, 100, 2, 20, 3, 2, 2, 2, 4, 41, 3, 2, 2, 2, 6, 45, 3, 2, 2, 2, 8,
+	61, 3, 2, 2, 2, 10, 63, 3, 2, 2, 2, 12, 72, 3, 2, 2, 2, 14, 74, 3, 2, 2,
+	2, 16, 76, 3, 2, 2, 2, 18, 89, 3, 2, 2, 2, 20, 29, 5, 4, 3, 2, 21, 23,
+	7, 17, 2, 2, 22, 21, 3, 2, 2, 2, 23, 24, 3, 2, 2, 2, 24, 22, 3, 2, 2, 2,
 	24, 25, 3, 2, 2, 2, 25, 26, 3, 2, 2, 2, 26, 28, 5, 4, 3, 2, 27, 22, 3,
 	2, 2, 2, 28, 31, 3, 2, 2, 2, 29, 27, 3, 2, 2, 2, 29, 30, 3, 2, 2, 2, 30,
-	35, 3, 2, 2, 2, 31, 29, 3, 2, 2, 2, 32, 34, 7, 16, 2, 2, 33, 32, 3, 2,
+	35, 3, 2, 2, 2, 31, 29, 3, 2, 2, 2, 32, 34, 7, 17, 2, 2, 33, 32, 3, 2,
 	2, 2, 34, 37, 3, 2, 2, 2, 35, 33, 3, 2, 2, 2, 35, 36, 3, 2, 2, 2, 36, 3,
 	3, 2, 2, 2, 37, 35, 3, 2, 2, 2, 38, 42, 5, 6, 4, 2, 39, 42, 5, 18, 10,
 	2, 40, 42, 5, 8, 5, 2, 41, 38, 3, 2, 2, 2, 41, 39, 3, 2, 2, 2, 41, 40,
 	3, 2, 2, 2, 42, 43, 3, 2, 2, 2, 43, 41, 3, 2, 2, 2, 43, 44, 3, 2, 2, 2,
 	44, 5, 3, 2, 2, 2, 45, 46, 7, 6, 2, 2, 46, 47, 7, 7, 2, 2, 47, 52, 5, 8,
-	5, 2, 48, 49, 7, 12, 2, 2, 49, 51, 5, 8, 5, 2, 50, 48, 3, 2, 2, 2, 51,
+	5, 2, 48, 49, 7, 11, 2, 2, 49, 51, 5, 8, 5, 2, 50, 48, 3, 2, 2, 2, 51,
 	54, 3, 2, 2, 2, 52, 50, 3, 2, 2, 2, 52, 53, 3, 2, 2, 2, 53, 55, 3, 2, 2,
 	2, 54, 52, 3, 2, 2, 2, 55, 56, 7, 8, 2, 2, 56, 7, 3, 2, 2, 2, 57, 62, 5,
 	10, 6, 2, 58, 62, 5, 12, 7, 2, 59, 62, 5, 14, 8, 2, 60, 62, 5, 16, 9, 2,
 	61, 57, 3, 2, 2, 2, 61, 58, 3, 2, 2, 2, 61, 59, 3, 2, 2, 2, 61, 60, 3,
-	2, 2, 2, 62, 9, 3, 2, 2, 2, 63, 64, 7, 9, 2, 2, 64, 11, 3, 2, 2, 2, 65,
-	66, 7, 10, 2, 2, 66, 13, 3, 2, 2, 2, 67, 68, 7, 11, 2, 2, 68, 15, 3, 2,
-	2, 2, 69, 70, 7, 13, 2, 2, 70, 17, 3, 2, 2, 2, 71, 74, 7, 15, 2, 2, 72,
-	73, 7, 17, 2, 2, 73, 75, 9, 2, 2, 2, 74, 72, 3, 2, 2, 2, 74, 75, 3, 2,
-	2, 2, 75, 83, 3, 2, 2, 2, 76, 83, 7, 7, 2, 2, 77, 83, 7, 8, 2, 2, 78, 83,
-	7, 12, 2, 2, 79, 83, 7, 18, 2, 2, 80, 83, 7, 19, 2, 2, 81, 83, 7, 14, 2,
-	2, 82, 71, 3, 2, 2, 2, 82, 76, 3, 2, 2, 2, 82, 77, 3, 2, 2, 2, 82, 78,
-	3, 2, 2, 2, 82, 79, 3, 2, 2, 2, 82, 80, 3, 2, 2, 2, 82, 81, 3, 2, 2, 2,
-	83, 19, 3, 2, 2, 2, 11, 24, 29, 35, 41, 43, 52, 61, 74, 82,
+	2, 2, 2, 62, 9, 3, 2, 2, 2, 63, 64, 9, 2, 2, 2, 64, 69, 7, 14, 2, 2, 65,
+	66, 7, 18, 2, 2, 66, 68, 7, 14, 2, 2, 67, 65, 3, 2, 2, 2, 68, 71, 3, 2,
+	2, 2, 69, 67, 3, 2, 2, 2, 69, 70, 3, 2, 2, 2, 70, 11, 3, 2, 2, 2, 71, 69,
+	3, 2, 2, 2, 72, 73, 7, 9, 2, 2, 73, 13, 3, 2, 2, 2, 74, 75, 7, 10, 2, 2,
+	75, 15, 3, 2, 2, 2, 76, 77, 7, 12, 2, 2, 77, 17, 3, 2, 2, 2, 78, 81, 7,
+	14, 2, 2, 79, 80, 7, 18, 2, 2, 80, 82, 9, 3, 2, 2, 81, 79, 3, 2, 2, 2,
+	81, 82, 3, 2, 2, 2, 82, 90, 3, 2, 2, 2, 83, 90, 7, 7, 2, 2, 84, 90, 7,
+	8, 2, 2, 85, 90, 7, 11, 2, 2, 86, 90, 7, 19, 2, 2, 87, 90, 7, 20, 2, 2,
+	88, 90, 7, 13, 2, 2, 89, 78, 3, 2, 2, 2, 89, 83, 3, 2, 2, 2, 89, 84, 3,
+	2, 2, 2, 89, 85, 3, 2, 2, 2, 89, 86, 3, 2, 2, 2, 89, 87, 3, 2, 2, 2, 89,
+	88, 3, 2, 2, 2, 90, 19, 3, 2, 2, 2, 12, 24, 29, 35, 41, 43, 52, 61, 69,
+	81, 89,
 }
 var deserializer = antlr.NewATNDeserializer(nil)
 var deserializedATN = deserializer.DeserializeFromUInt16(parserATN)
 
 var literalNames = []string{
-	"", "", "", "", "", "'('", "')'", "", "'?'", "", "','", "", "", "", "';'",
-	"'.'", "'*'",
+	"", "", "", "", "", "'('", "')'", "'?'", "", "','", "", "", "", "'@'",
+	"':'", "';'", "'.'", "'*'",
 }
 var symbolicNames = []string{
 	"", "SPACES", "BLOCK_COMMENT", "LINE_COMMENT", "IN", "OPEN_PAREN", "CLOSE_PAREN",
-	"NAMED_PARAMETER", "QMARK", "DDEC", "COMMA", "STRING", "NUMBER", "IDENTIFIER",
+	"QMARK", "DDEC", "COMMA", "STRING", "NUMBER", "IDENTIFIER", "AT", "COLON",
 	"SEMI", "DOT", "STAR", "ANY_SYMBOL",
 }
 
@@ -112,24 +116,25 @@ func NewNamedParser(input antlr.TokenStream) *NamedParser {
 
 // NamedParser tokens.
 const (
-	NamedParserEOF             = antlr.TokenEOF
-	NamedParserSPACES          = 1
-	NamedParserBLOCK_COMMENT   = 2
-	NamedParserLINE_COMMENT    = 3
-	NamedParserIN              = 4
-	NamedParserOPEN_PAREN      = 5
-	NamedParserCLOSE_PAREN     = 6
-	NamedParserNAMED_PARAMETER = 7
-	NamedParserQMARK           = 8
-	NamedParserDDEC            = 9
-	NamedParserCOMMA           = 10
-	NamedParserSTRING          = 11
-	NamedParserNUMBER          = 12
-	NamedParserIDENTIFIER      = 13
-	NamedParserSEMI            = 14
-	NamedParserDOT             = 15
-	NamedParserSTAR            = 16
-	NamedParserANY_SYMBOL      = 17
+	NamedParserEOF           = antlr.TokenEOF
+	NamedParserSPACES        = 1
+	NamedParserBLOCK_COMMENT = 2
+	NamedParserLINE_COMMENT  = 3
+	NamedParserIN            = 4
+	NamedParserOPEN_PAREN    = 5
+	NamedParserCLOSE_PAREN   = 6
+	NamedParserQMARK         = 7
+	NamedParserDDEC          = 8
+	NamedParserCOMMA         = 9
+	NamedParserSTRING        = 10
+	NamedParserNUMBER        = 11
+	NamedParserIDENTIFIER    = 12
+	NamedParserAT            = 13
+	NamedParserCOLON         = 14
+	NamedParserSEMI          = 15
+	NamedParserDOT           = 16
+	NamedParserSTAR          = 17
+	NamedParserANY_SYMBOL    = 18
 )
 
 // NamedParser rules.
@@ -459,7 +464,7 @@ func (p *NamedParser) Stmt() (localctx IStmtContext) {
 	p.GetErrorHandler().Sync(p)
 	_la = p.GetTokenStream().LA(1)
 
-	for ok := true; ok; ok = (((_la)&-(0x1f+1)) == 0 && ((1<<uint(_la))&((1<<NamedParserIN)|(1<<NamedParserOPEN_PAREN)|(1<<NamedParserCLOSE_PAREN)|(1<<NamedParserNAMED_PARAMETER)|(1<<NamedParserQMARK)|(1<<NamedParserDDEC)|(1<<NamedParserCOMMA)|(1<<NamedParserSTRING)|(1<<NamedParserNUMBER)|(1<<NamedParserIDENTIFIER)|(1<<NamedParserSTAR)|(1<<NamedParserANY_SYMBOL))) != 0) {
+	for ok := true; ok; ok = (((_la)&-(0x1f+1)) == 0 && ((1<<uint(_la))&((1<<NamedParserIN)|(1<<NamedParserOPEN_PAREN)|(1<<NamedParserCLOSE_PAREN)|(1<<NamedParserQMARK)|(1<<NamedParserDDEC)|(1<<NamedParserCOMMA)|(1<<NamedParserSTRING)|(1<<NamedParserNUMBER)|(1<<NamedParserIDENTIFIER)|(1<<NamedParserAT)|(1<<NamedParserCOLON)|(1<<NamedParserSTAR)|(1<<NamedParserANY_SYMBOL))) != 0) {
 		p.SetState(39)
 		p.GetErrorHandler().Sync(p)
 
@@ -476,7 +481,7 @@ func (p *NamedParser) Stmt() (localctx IStmtContext) {
 				p.AnyStmtParts()
 			}
 
-		case NamedParserNAMED_PARAMETER, NamedParserQMARK, NamedParserDDEC, NamedParserSTRING:
+		case NamedParserQMARK, NamedParserDDEC, NamedParserSTRING, NamedParserAT, NamedParserCOLON:
 			{
 				p.SetState(38)
 				p.Parameter()
@@ -773,7 +778,7 @@ func (p *NamedParser) Parameter() (localctx IParameterContext) {
 	p.GetErrorHandler().Sync(p)
 
 	switch p.GetTokenStream().LA(1) {
-	case NamedParserNAMED_PARAMETER:
+	case NamedParserAT, NamedParserCOLON:
 		p.EnterOuterAlt(localctx, 1)
 		{
 			p.SetState(55)
@@ -846,8 +851,28 @@ func NewNamedParamterContext(parser antlr.Parser, parent antlr.ParserRuleContext
 
 func (s *NamedParamterContext) GetParser() antlr.Parser { return s.parser }
 
-func (s *NamedParamterContext) NAMED_PARAMETER() antlr.TerminalNode {
-	return s.GetToken(NamedParserNAMED_PARAMETER, 0)
+func (s *NamedParamterContext) AllIDENTIFIER() []antlr.TerminalNode {
+	return s.GetTokens(NamedParserIDENTIFIER)
+}
+
+func (s *NamedParamterContext) IDENTIFIER(i int) antlr.TerminalNode {
+	return s.GetToken(NamedParserIDENTIFIER, i)
+}
+
+func (s *NamedParamterContext) AT() antlr.TerminalNode {
+	return s.GetToken(NamedParserAT, 0)
+}
+
+func (s *NamedParamterContext) COLON() antlr.TerminalNode {
+	return s.GetToken(NamedParserCOLON, 0)
+}
+
+func (s *NamedParamterContext) AllDOT() []antlr.TerminalNode {
+	return s.GetTokens(NamedParserDOT)
+}
+
+func (s *NamedParamterContext) DOT(i int) antlr.TerminalNode {
+	return s.GetToken(NamedParserDOT, i)
 }
 
 func (s *NamedParamterContext) GetRuleContext() antlr.RuleContext {
@@ -871,6 +896,7 @@ func (s *NamedParamterContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 func (p *NamedParser) NamedParamter() (localctx INamedParamterContext) {
 	localctx = NewNamedParamterContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 8, NamedParserRULE_namedParamter)
+	var _la int
 
 	defer func() {
 		p.ExitRule()
@@ -891,7 +917,36 @@ func (p *NamedParser) NamedParamter() (localctx INamedParamterContext) {
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(61)
-		p.Match(NamedParserNAMED_PARAMETER)
+		_la = p.GetTokenStream().LA(1)
+
+		if !(_la == NamedParserAT || _la == NamedParserCOLON) {
+			p.GetErrorHandler().RecoverInline(p)
+		} else {
+			p.GetErrorHandler().ReportMatch(p)
+			p.Consume()
+		}
+	}
+	{
+		p.SetState(62)
+		p.Match(NamedParserIDENTIFIER)
+	}
+	p.SetState(67)
+	p.GetErrorHandler().Sync(p)
+	_la = p.GetTokenStream().LA(1)
+
+	for _la == NamedParserDOT {
+		{
+			p.SetState(63)
+			p.Match(NamedParserDOT)
+		}
+		{
+			p.SetState(64)
+			p.Match(NamedParserIDENTIFIER)
+		}
+
+		p.SetState(69)
+		p.GetErrorHandler().Sync(p)
+		_la = p.GetTokenStream().LA(1)
 	}
 
 	return localctx
@@ -979,7 +1034,7 @@ func (p *NamedParser) QmarkParameter() (localctx IQmarkParameterContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(63)
+		p.SetState(70)
 		p.Match(NamedParserQMARK)
 	}
 
@@ -1068,7 +1123,7 @@ func (p *NamedParser) DDecParameter() (localctx IDDecParameterContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(65)
+		p.SetState(72)
 		p.Match(NamedParserDDEC)
 	}
 
@@ -1157,7 +1212,7 @@ func (p *NamedParser) StaticParameter() (localctx IStaticParameterContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(67)
+		p.SetState(74)
 		p.Match(NamedParserSTRING)
 	}
 
@@ -1277,27 +1332,27 @@ func (p *NamedParser) AnyStmtParts() (localctx IAnyStmtPartsContext) {
 		}
 	}()
 
-	p.SetState(80)
+	p.SetState(87)
 	p.GetErrorHandler().Sync(p)
 
 	switch p.GetTokenStream().LA(1) {
 	case NamedParserIDENTIFIER:
 		p.EnterOuterAlt(localctx, 1)
 		{
-			p.SetState(69)
+			p.SetState(76)
 			p.Match(NamedParserIDENTIFIER)
 		}
-		p.SetState(72)
+		p.SetState(79)
 		p.GetErrorHandler().Sync(p)
 		_la = p.GetTokenStream().LA(1)
 
 		if _la == NamedParserDOT {
 			{
-				p.SetState(70)
+				p.SetState(77)
 				p.Match(NamedParserDOT)
 			}
 			{
-				p.SetState(71)
+				p.SetState(78)
 				_la = p.GetTokenStream().LA(1)
 
 				if !(_la == NamedParserIDENTIFIER || _la == NamedParserSTAR) {
@@ -1313,42 +1368,42 @@ func (p *NamedParser) AnyStmtParts() (localctx IAnyStmtPartsContext) {
 	case NamedParserOPEN_PAREN:
 		p.EnterOuterAlt(localctx, 2)
 		{
-			p.SetState(74)
+			p.SetState(81)
 			p.Match(NamedParserOPEN_PAREN)
 		}
 
 	case NamedParserCLOSE_PAREN:
 		p.EnterOuterAlt(localctx, 3)
 		{
-			p.SetState(75)
+			p.SetState(82)
 			p.Match(NamedParserCLOSE_PAREN)
 		}
 
 	case NamedParserCOMMA:
 		p.EnterOuterAlt(localctx, 4)
 		{
-			p.SetState(76)
+			p.SetState(83)
 			p.Match(NamedParserCOMMA)
 		}
 
 	case NamedParserSTAR:
 		p.EnterOuterAlt(localctx, 5)
 		{
-			p.SetState(77)
+			p.SetState(84)
 			p.Match(NamedParserSTAR)
 		}
 
 	case NamedParserANY_SYMBOL:
 		p.EnterOuterAlt(localctx, 6)
 		{
-			p.SetState(78)
+			p.SetState(85)
 			p.Match(NamedParserANY_SYMBOL)
 		}
 
 	case NamedParserNUMBER:
 		p.EnterOuterAlt(localctx, 7)
 		{
-			p.SetState(79)
+			p.SetState(86)
 			p.Match(NamedParserNUMBER)
 		}
 
