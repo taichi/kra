@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-
-	"github.com/georgysavva/scany/dbscan"
 )
 
 type DB uint8
@@ -43,7 +41,7 @@ func NewCore(db DB) *Core {
 		return NewDefaultResolver(core, args...)
 	}
 
-	trans := &DefaultTransformer{}
+	trans := NewDefaultTransformer(core)
 	core.NewTransformer = func() Transformer {
 		return trans
 	}
@@ -181,13 +179,4 @@ func isStruct(arg interface{}) bool {
 		kind = value.Elem().Kind()
 	}
 	return kind == reflect.Struct
-}
-
-type DefaultTransformer struct{}
-
-func (*DefaultTransformer) Transform(src Rows, dst interface{}) error {
-	return dbscan.ScanOne(dst, src)
-}
-func (*DefaultTransformer) TransformAll(src Rows, dst interface{}) error {
-	return dbscan.ScanAll(dst, src)
 }

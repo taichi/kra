@@ -39,6 +39,11 @@ type TestTable struct {
 	db      *DB
 }
 
+type fixture struct {
+	TestKey   string `db:"test_key"`
+	TestValue string `db:"test_value"`
+}
+
 func setup(t *testing.T) (*TestTable, error) {
 
 	core := kra.NewCore(kra.PostgreSQL)
@@ -75,7 +80,7 @@ func newTestTable() *TestTable {
 		test_value VARCHAR
 );`, result.name)
 	result.drop = fmt.Sprintf("DROP TABLE IF EXISTS %s", result.name)
-	result.insert = fmt.Sprintf("INSERT INTO %s (test_key, test_value) VALUES (:testkey, :testvalue)", result.name)
+	result.insert = fmt.Sprintf("INSERT INTO %s (test_key, test_value) VALUES (:test_key, :test_value)", result.name)
 	result.find = fmt.Sprintf("SELECT test_key, test_value FROM %s WHERE test_key= ?", result.name)
 	result.findAll = fmt.Sprintf("SELECT test_key, test_value FROM %s", result.name)
 	result.count = fmt.Sprintf("SELECT COUNT(*) FROM %s", result.name)
@@ -95,9 +100,23 @@ func cleanup(t *testing.T, table *TestTable) func() {
 	}
 }
 
-type fixture struct {
-	TestKey   string
-	TestValue string
+func insertData(t *testing.T, table *TestTable) error {
+	data := []fixture{
+		{"111", "aa"},
+		{"222", "bbbb"},
+		{"333", "ccc"},
+	}
+
+	for _, fix := range data {
+		if res, err := table.db.Exec(context.Background(), table.insert, fix); err != nil {
+			return err
+		} else if count, err := res.RowsAffected(); err != nil {
+			return err
+		} else {
+			assert.Equal(t, int64(1), count)
+		}
+	}
+	return nil
 }
 
 func TestExec(t *testing.T) {
@@ -125,23 +144,9 @@ func TestFind(t *testing.T) {
 		t.Error(err)
 		return
 	}
-
-	data := []fixture{
-		{"111", "aa"},
-		{"222", "bbbb"},
-		{"333", "ccc"},
-	}
-
-	for _, fix := range data {
-		if res, err := table.db.Exec(context.Background(), table.insert, fix); err != nil {
-			t.Error(err)
-			return
-		} else if count, err := res.RowsAffected(); err != nil {
-			t.Error(err)
-			return
-		} else {
-			assert.Equal(t, int64(1), count)
-		}
+	if err := insertData(t, table); err != nil {
+		t.Error(err)
+		return
 	}
 
 	var dst fixture
@@ -149,16 +154,14 @@ func TestFind(t *testing.T) {
 		t.Error(err)
 		return
 	}
-
 	assert.Equal(t, "bbbb", dst.TestValue)
 
-	var dstAry []fixture
-	if err := table.db.FindAll(context.Background(), &dstAry, table.findAll); err != nil {
+	var dstMap map[string]interface{}
+	if err := table.db.Find(context.Background(), &dstMap, table.find, "222"); err != nil {
 		t.Error(err)
 		return
 	}
-
-	assert.Equal(t, 3, len(dstAry))
+	assert.Equal(t, "bbbb", dstMap["test_value"])
 
 	var count int
 	if err := table.db.Find(context.Background(), &count, table.count); err != nil {
@@ -166,4 +169,111 @@ func TestFind(t *testing.T) {
 		return
 	}
 	assert.Equal(t, 3, count)
+}
+
+func TestFindAll(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if err := insertData(t, table); err != nil {
+		t.Error(err)
+		return
+	}
+
+	var dstAry []*fixture
+	if err := table.db.FindAll(context.Background(), &dstAry, table.findAll); err != nil {
+		t.Error(err)
+		return
+	}
+
+	assert.Equal(t, 3, len(dstAry))
+	assert.Equal(t, "111", dstAry[0].TestKey)
+}
+
+func TestFindAllMap(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if err := insertData(t, table); err != nil {
+		t.Error(err)
+		return
+	}
+
+	var dstAry []map[string]interface{}
+	if err := table.db.FindAll(context.Background(), &dstAry, table.findAll); err != nil {
+		t.Error(err)
+		return
+	}
+
+	assert.Equal(t, 3, len(dstAry))
+	assert.Equal(t, "111", dstAry[0]["test_key"])
+}
+
+func TestDefaultTransformer_Transform_Map(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if err := insertData(t, table); err != nil {
+		t.Error(err)
+		return
+	}
+
+	var result map[string]interface{}
+
+	if err := table.db.Find(context.Background(), &result, table.find, "111"); err != nil {
+		t.Error(err)
+		return
+	}
+
+	assert.Equal(t, "111", result["test_key"])
+	assert.Equal(t, "aa", result["test_value"])
+}
+
+func TestDefaultTransformer_Transform_Struct(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if err := insertData(t, table); err != nil {
+		t.Error(err)
+		return
+	}
+
+	var result fixture
+
+	if err := table.db.Find(context.Background(), &result, table.find, "111"); err != nil {
+		t.Error(err)
+		return
+	}
+
+	assert.Equal(t, "111", result.TestKey)
+	assert.Equal(t, "aa", result.TestValue)
+}
+
+func TestDefaultTransformer_Transform_int(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if err := insertData(t, table); err != nil {
+		t.Error(err)
+		return
+	}
+
+	var result int
+
+	if err := table.db.Find(context.Background(), &result, table.count); err != nil {
+		t.Error(err)
+		return
+	}
+
+	assert.Equal(t, 3, result)
 }
