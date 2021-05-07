@@ -33,7 +33,6 @@ var ErrNoPointer = errors.New("kra: destination is not a pointer")
 var ErrNilPointer = errors.New("kra: destination is typed nil pointer")
 var ErrNoColumns = errors.New("kra: no scannable columns")
 var ErrInvalidMapKeyType = errors.New("kra: invalid map key type")
-var ErrNoRecord = errors.New("kra: no record")
 var ErrNoSlice = errors.New("kra: destination is not a slice")
 
 func validate(src Rows, value reflect.Value) error {
@@ -76,16 +75,10 @@ func (transformer *DefaultTransformer) Transform(src Rows, dest interface{}) err
 		return err
 	}
 
-	defer src.Close()
-
-	if src.Next() == false {
-		return ErrNoRecord
-	}
-
 	directValue := reflect.Indirect(value)
 
 	if isScanner(directValue.Type()) {
-		return src.Scan(dest)
+		return Scan(src, dest)
 	}
 
 	columns, err := seekColumns(src)
@@ -107,13 +100,20 @@ func (transformer *DefaultTransformer) Transform(src Rows, dest interface{}) err
 		return transformer.ScanStruct(src, columns, value)
 	}
 
-	return src.Scan(dest)
+	return Scan(src, dest)
 }
 
 var typeOfScanner = reflect.TypeOf((*sql.Scanner)(nil)).Elem()
 
 func isScanner(elementType reflect.Type) bool {
 	return reflect.PtrTo(elementType).Implements(typeOfScanner)
+}
+
+func Scan(src Rows, dest interface{}) error {
+	if err := src.Scan(dest); err != nil {
+		return err
+	}
+	return src.Err()
 }
 
 func ScanMap(src Rows, columns []string, value reflect.Value) error {
@@ -181,8 +181,6 @@ func (transformer *DefaultTransformer) TransformAll(src Rows, dest interface{}) 
 		return fmt.Errorf("type=%v %w", value.Type(), ErrNoSlice)
 	}
 
-	defer src.Close()
-
 	elementType := directValue.Type().Elem()
 	appender := selectAppender(directValue, elementType)
 	directElementType := Indirect(elementType)
@@ -229,6 +227,9 @@ func ScanAll(src Rows, elementType reflect.Type, appender func(reflect.Value)) e
 	for src.Next() {
 		newValue := reflect.New(elementType)
 		if err := src.Scan(newValue.Interface()); err != nil {
+			return err
+		}
+		if err := src.Err(); err != nil {
 			return err
 		}
 		appender(newValue)

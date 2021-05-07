@@ -226,7 +226,3 @@ func (rows *Rows) Close() error {
 func (rows *Rows) Scan(dest interface{}) error {
 	return rows.transformer.Transform(rows.rows, dest)
 }
-
-func (rows *Rows) ScanAll(dest interface{}) error {
-	return rows.transformer.TransformAll(rows.rows, dest)
-}

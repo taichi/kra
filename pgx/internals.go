@@ -83,8 +83,13 @@ func doQuery(core *kra.Core, query QueryFn, ctx context.Context, queryString str
 func doFind(core *kra.Core, query QueryFn, ctx context.Context, dst interface{}, queryString string, args ...interface{}) error {
 	if rows, err := doQuery(core, query, ctx, queryString, args...); err != nil {
 		return err
-	} else if err := rows.Scan(dst); err != nil {
-		return err
+	} else {
+		defer rows.Close()
+		if rows.rows.Next() == false {
+			return kra.ErrNoRecord
+		} else if err := rows.Scan(dst); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -92,8 +97,11 @@ func doFind(core *kra.Core, query QueryFn, ctx context.Context, dst interface{},
 func doFindAll(core *kra.Core, query QueryFn, ctx context.Context, dst interface{}, queryString string, args ...interface{}) error {
 	if rows, err := doQuery(core, query, ctx, queryString, args...); err != nil {
 		return err
-	} else if err := rows.ScanAll(dst); err != nil {
-		return err
+	} else {
+		defer rows.Close()
+		if err := rows.transformer.TransformAll(&rowsAdapter{rows.rows}, dst); err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -359,10 +359,6 @@ func (rows *Rows) Scan(dest interface{}) error {
 	return rows.transformer.Transform(&rowsAdapter{rows.rows}, dest)
 }
 
-func (rows *Rows) ScanAll(dest interface{}) error {
-	return rows.transformer.TransformAll(&rowsAdapter{rows.rows}, dest)
-}
-
 type rowsAdapter struct {
 	pgx.Rows
 }

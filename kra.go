@@ -38,8 +38,8 @@ type Rows interface {
 }
 
 type Transformer interface {
-	Transform(src Rows, dst interface{}) error
-	TransformAll(src Rows, dst interface{}) error
+	Transform(src Rows, dest interface{}) error
+	TransformAll(src Rows, dest interface{}) error
 }
 
 type Core struct {
@@ -52,3 +52,4 @@ type Core struct {
 }
 
 var ErrLackOfQueryParameters = errors.New("kra: require example parameters for prepare query with IN operator")
+var ErrNoRecord = errors.New("kra: no record")
