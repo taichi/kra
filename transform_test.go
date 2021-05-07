@@ -87,7 +87,7 @@ func newTestTable() *TestTable {
 	result.drop = fmt.Sprintf("DROP TABLE IF EXISTS %s", result.name)
 	result.insert = fmt.Sprintf("INSERT INTO %s (test_key, test_value, len) VALUES ($1, $2, $3)", result.name)
 	result.find = fmt.Sprintf("SELECT test_key, test_value, len FROM %s WHERE test_key= $1", result.name)
-	result.findAll = fmt.Sprintf("SELECT test_key, test_value, len FROM %s", result.name)
+	result.findAll = fmt.Sprintf("SELECT test_key, test_value, len FROM %s ORDER BY test_key", result.name)
 	result.count = fmt.Sprintf("SELECT COUNT(*) FROM %s", result.name)
 
 	return &result
@@ -154,6 +154,7 @@ func TestDefaultTransformer_Transform_Scanner(t *testing.T) {
 
 	assert.Equal(t, pgtype.Interval{Microseconds: 5400000000, Status: pgtype.Present}, result)
 }
+
 func TestDefaultTransformer_Transform_Struct(t *testing.T) {
 	table, err := setup(t)
 	if err != nil {
@@ -244,4 +245,125 @@ func TestDefaultTransformer_Transform_int(t *testing.T) {
 	}
 
 	assert.Equal(t, 3, result)
+}
+
+func TestDefaultTransformer_TransformAll_Scanner(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	query := fmt.Sprintf("SELECT len FROM %s ORDER BY test_key", table.name) // nolint:gosec
+	rows, err := table.db.Query(query)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if rows.Err() != nil {
+		t.Error(rows.Err())
+		return
+	}
+	defer rows.Close()
+
+	target := table.core.NewTransformer()
+
+	var result []pgtype.Interval
+	if err := target.TransformAll(rows, &result); err != nil {
+		t.Error(err)
+		return
+	}
+
+	assert.Equal(t, pgtype.Interval{Microseconds: 5400000000, Status: pgtype.Present}, result[0])
+	assert.Equal(t, 3, len(result))
+}
+
+func TestDefaultTransformer_TransformAll_String(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	query := fmt.Sprintf("SELECT test_key FROM %s ORDER BY test_key", table.name) // nolint:gosec
+	rows, err := table.db.Query(query)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if rows.Err() != nil {
+		t.Error(rows.Err())
+		return
+	}
+	defer rows.Close()
+
+	target := table.core.NewTransformer()
+
+	var result []string
+	if err := target.TransformAll(rows, &result); err != nil {
+		t.Error(err)
+		return
+	}
+
+	assert.Equal(t, "1111", result[0])
+	assert.Equal(t, 3, len(result))
+}
+
+func TestDefaultTransformer_TransformAll_Struct(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	rows, err := table.db.Query(table.findAll)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if rows.Err() != nil {
+		t.Error(rows.Err())
+		return
+	}
+	defer rows.Close()
+
+	target := table.core.NewTransformer()
+
+	var result []fixture
+	if err := target.TransformAll(rows, &result); err != nil {
+		t.Error(err)
+		return
+	}
+
+	assert.Equal(t, "1111", result[0].TestKey)
+}
+
+func TestDefaultTransformer_TransformAll_Map(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	rows, err := table.db.Query(table.findAll)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if rows.Err() != nil {
+		t.Error(rows.Err())
+		return
+	}
+	defer rows.Close()
+
+	target := table.core.NewTransformer()
+
+	var result []map[string]interface{}
+	if err := target.TransformAll(rows, &result); err != nil {
+		t.Error(err)
+		return
+	}
+
+	assert.Equal(t, "1111", result[0]["test_key"])
+	assert.Equal(t, "01:30:00", result[0]["len"])
 }
