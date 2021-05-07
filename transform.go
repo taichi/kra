@@ -216,21 +216,13 @@ func (transformer *DefaultTransformer) TransformAll(src Rows, dest interface{}) 
 func selectAppender(directValue reflect.Value, elementType reflect.Type) func(reflect.Value) {
 	if elementType.Kind() == reflect.Ptr {
 		return func(newValue reflect.Value) {
-			appendPointer(directValue, newValue)
+			directValue.Set(reflect.Append(directValue, newValue))
 		}
 	} else {
 		return func(newValue reflect.Value) {
-			appendDirect(directValue, newValue)
+			directValue.Set(reflect.Append(directValue, reflect.Indirect(newValue)))
 		}
 	}
-}
-
-func appendPointer(container reflect.Value, newValue reflect.Value) {
-	container.Set(reflect.Append(container, newValue))
-}
-
-func appendDirect(container reflect.Value, newValue reflect.Value) {
-	container.Set(reflect.Append(container, reflect.Indirect(newValue)))
 }
 
 func ScanAll(src Rows, elementType reflect.Type, appender func(reflect.Value)) error {
