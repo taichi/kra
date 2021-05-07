@@ -76,7 +76,7 @@ func doQuery(core *kra.Core, query QueryFn, ctx context.Context, queryString str
 	} else if rows.Err() != nil {
 		return nil, rows.Err()
 	} else {
-		return &Rows{rows, core.NewTransformer()}, nil
+		return NewRows(core, rows), nil
 	}
 }
 
@@ -99,7 +99,7 @@ func doFindAll(core *kra.Core, query QueryFn, ctx context.Context, dst interface
 		return err
 	} else {
 		defer rows.Close()
-		if err := rows.transformer.TransformAll(&rowsAdapter{rows.rows}, dst); err != nil {
+		if err := rows.transformer.TransformAll(rows.rows, dst); err != nil {
 			return err
 		}
 	}

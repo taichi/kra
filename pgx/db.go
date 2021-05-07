@@ -307,7 +307,7 @@ func (stmt *Stmt) Query(ctx context.Context, args ...interface{}) (*Rows, error)
 	} else if rows.Err() != nil {
 		return nil, rows.Err()
 	} else {
-		return &Rows{rows, stmt.core.NewTransformer()}, nil
+		return NewRows(stmt.core, rows), nil
 	}
 }
 
@@ -334,8 +334,12 @@ func (stmt *PooledStmt) Query(ctx context.Context, args ...interface{}) (*Rows, 
 }
 
 type Rows struct {
-	rows        pgx.Rows
+	rows        *rowsAdapter
 	transformer kra.Transformer
+}
+
+func NewRows(core *kra.Core, rows pgx.Rows) *Rows {
+	return &Rows{&rowsAdapter{rows}, core.NewTransformer()}
 }
 
 func (rows *Rows) Next() bool {
@@ -347,7 +351,7 @@ func (rows *Rows) Err() error {
 }
 
 func (rows *Rows) Rows() pgx.Rows {
-	return rows.rows
+	return rows.rows.Rows
 }
 
 func (rows *Rows) Close() error {
@@ -356,7 +360,7 @@ func (rows *Rows) Close() error {
 }
 
 func (rows *Rows) Scan(dest interface{}) error {
-	return rows.transformer.Transform(&rowsAdapter{rows.rows}, dest)
+	return rows.transformer.Transform(rows.rows, dest)
 }
 
 type rowsAdapter struct {
@@ -415,6 +419,6 @@ func (batchResults *BatchResults) Query() (*Rows, error) {
 	if rows, err := batchResults.batchResults.Query(); err != nil {
 		return nil, err
 	} else {
-		return &Rows{rows, batchResults.core.NewTransformer()}, nil
+		return NewRows(batchResults.core, rows), nil
 	}
 }
