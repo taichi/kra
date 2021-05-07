@@ -132,8 +132,8 @@ func (collector *PartsCollector) Use2orMoreStyles() bool {
 	return collector.style&NQ == NQ || collector.style&ND == ND || collector.style&QD == QD
 }
 
-var Err2orMoreStatements = errors.New("2 or more statements in 1 query. Use batch queries. ")
-var Err2orMoreParameterStyles = errors.New("2 or more bind variables style contains in 1 statement. Use only 1 bind variables style in 1 query, such as ? or $1,$2,$3... or :foo,:bar,:baz... ")
+var Err2orMoreStatements = errors.New("kra: 2 or more statements in 1 query. Use batch queries. ")
+var Err2orMoreParameterStyles = errors.New("kra: 2 or more bind variables style contains in 1 statement. Use only 1 bind variables style in 1 query, such as ? or $1,$2,$3... or :foo,:bar,:baz... ")
 
 func (collector *PartsCollector) Validate() error {
 	if 1 < collector.statements {
@@ -275,7 +275,7 @@ func NewStringPart(src string) (StmtPart, error) {
 	}, nil
 }
 
-var ErrEmptySlice = errors.New("empty slice set to in query parameter")
+var ErrEmptySlice = errors.New("kra: empty slice set to in query parameter")
 
 func NewInPart(in, src string) (StmtPart, error) {
 	name := src[1:]

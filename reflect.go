@@ -62,7 +62,7 @@ func (repo *TypeRepository) LookupOrTraverse(target reflect.Type, history ...*St
 	}
 }
 
-var ErrUnsupportedValueType = errors.New("unsupported value type")
+var ErrUnsupportedValueType = errors.New("kra: unsupported value type")
 
 func (repo *TypeRepository) Traverse(target reflect.Type, history ...*StructDef) (*StructDef, error) {
 	targetType := Indirect(target)
@@ -144,8 +144,8 @@ type FieldDef struct {
 	Options    map[string]string
 }
 
-var ErrFieldNotFound = errors.New("field not found")
-var ErrFieldUnexported = errors.New("field not exported")
+var ErrFieldNotFound = errors.New("kra: field not found")
+var ErrFieldUnexported = errors.New("kra: field not exported")
 
 func (def *StructDef) ByName(root reflect.Value, name string) (*FieldDef, *reflect.Value, error) {
 	names := strings.Split(strings.ToLower(name), ".")

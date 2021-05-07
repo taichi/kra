@@ -29,12 +29,12 @@ func NewDefaultTransformer(core *Core) *DefaultTransformer {
 	return &DefaultTransformer{core}
 }
 
-var ErrNoPointer = errors.New("destination is not a pointer")
-var ErrNilPointer = errors.New("destination is typed nil pointer")
-var ErrNoColumns = errors.New("no scannable columns")
-var ErrInvalidMapKeyType = errors.New("invalid map key type")
-var ErrNoRecord = errors.New("no record")
-var ErrNoSlice = errors.New("destination is not a slice")
+var ErrNoPointer = errors.New("kra: destination is not a pointer")
+var ErrNilPointer = errors.New("kra: destination is typed nil pointer")
+var ErrNoColumns = errors.New("kra: no scannable columns")
+var ErrInvalidMapKeyType = errors.New("kra: invalid map key type")
+var ErrNoRecord = errors.New("kra: no record")
+var ErrNoSlice = errors.New("kra: destination is not a slice")
 
 func validate(src Rows, value reflect.Value) error {
 	if src == nil {

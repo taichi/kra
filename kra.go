@@ -51,4 +51,4 @@ type Core struct {
 	Repository     *TypeRepository
 }
 
-var ErrLackOfQueryParameters = errors.New("require example parameters for prepare query with IN operator")
+var ErrLackOfQueryParameters = errors.New("kra: require example parameters for prepare query with IN operator")
