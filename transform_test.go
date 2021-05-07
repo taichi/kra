@@ -123,6 +123,37 @@ func insertData(t *testing.T, table *TestTable) error {
 	}
 	return nil
 }
+
+func TestDefaultTransformer_Transform_Scanner(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	query := fmt.Sprintf("SELECT len FROM %s WHERE test_key= $1", table.name) // nolint:gosec
+	rows, err := table.db.Query(query, "1111")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if rows.Err() != nil {
+		t.Error(rows.Err())
+		return
+	}
+	defer rows.Close()
+	assert.True(t, rows.Next())
+
+	target := table.core.NewTransformer()
+
+	var result pgtype.Interval
+	if err := target.Transform(rows, &result); err != nil {
+		t.Error(err)
+		return
+	}
+
+	assert.Equal(t, pgtype.Interval{Microseconds: 5400000000, Status: pgtype.Present}, result)
+}
 func TestDefaultTransformer_Transform_Struct(t *testing.T) {
 	table, err := setup(t)
 	if err != nil {
@@ -140,6 +171,7 @@ func TestDefaultTransformer_Transform_Struct(t *testing.T) {
 		return
 	}
 	defer rows.Close()
+	assert.True(t, rows.Next())
 
 	target := table.core.NewTransformer()
 
@@ -170,6 +202,7 @@ func TestDefaultTransformer_Transform_Map(t *testing.T) {
 		return
 	}
 	defer rows.Close()
+	assert.True(t, rows.Next())
 
 	target := table.core.NewTransformer()
 
@@ -200,6 +233,7 @@ func TestDefaultTransformer_Transform_int(t *testing.T) {
 		return
 	}
 	defer rows.Close()
+	assert.True(t, rows.Next())
 
 	target := table.core.NewTransformer()
 
