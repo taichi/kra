@@ -42,7 +42,7 @@ func (repo *TypeRepository) Lookup(root reflect.Type) (*StructDef, error) {
 
 func (repo *TypeRepository) LookupOrTraverse(target reflect.Type, history ...*StructDef) (*StructDef, error) {
 	for _, def := range history {
-		if target == def.target { // skip recursive type reference
+		if target == def.Target { // skip recursive type reference
 			return def, nil
 		}
 	}
@@ -51,7 +51,7 @@ func (repo *TypeRepository) LookupOrTraverse(target reflect.Type, history ...*St
 		return def.(*StructDef), nil
 	}
 
-	newDef := &StructDef{target: target}
+	newDef := &StructDef{Target: target}
 	history = append(history, newDef)
 	if def, err := repo.Traverse(target, history...); err != nil {
 		return nil, err
@@ -90,8 +90,8 @@ func (repo *TypeRepository) Traverse(target reflect.Type, history ...*StructDef)
 		}
 		members[name] = FieldDef{[]int{index}, child, false, options}
 
-		if field.Anonymous && child != nil && child.members != nil {
-			for key, val := range child.members {
+		if field.Anonymous && child != nil && child.Members != nil {
+			for key, val := range child.Members {
 				if _, ok := members[key]; ok == false { // don't override by embedded members
 					members[key] = FieldDef{append([]int{index}, val.Indices...), val.Self, false, options}
 				}
@@ -133,8 +133,8 @@ func parseTag(core *Core, field *reflect.StructField) (name string, options map[
 }
 
 type StructDef struct {
-	target  reflect.Type
-	members map[string]FieldDef
+	Target  reflect.Type
+	Members map[string]FieldDef
 }
 
 type FieldDef struct {
@@ -154,7 +154,7 @@ func (def *StructDef) ByName(root reflect.Value, name string) (*FieldDef, *refle
 
 func visitByName(def *StructDef, value *reflect.Value, names []string) (*FieldDef, *reflect.Value, error) {
 	cur := names[0]
-	if fdef, ok := def.members[cur]; ok {
+	if fdef, ok := def.Members[cur]; ok {
 		if fdef.Unexported {
 			return nil, nil, fmt.Errorf("name=%s %w", cur, ErrFieldUnexported)
 		}
