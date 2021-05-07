@@ -31,6 +31,8 @@ const (
 	SQLServer
 )
 
+const DefaultTagName = "db"
+
 func NewCore(db DB) *Core {
 	core := &Core{}
 	core.BindVar = db.toBindVar()
@@ -45,7 +47,7 @@ func NewCore(db DB) *Core {
 	core.NewTransformer = func() Transformer {
 		return trans
 	}
-	core.TagName = "db"
+	core.TagName = DefaultTagName
 	core.Repository = NewTypeRepository(core)
 
 	return core
