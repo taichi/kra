@@ -99,7 +99,7 @@ func (transformer *DefaultTransformer) Transform(src Rows, dest interface{}) err
 		if mapType.Key().Kind() == reflect.String {
 			return ScanMap(src, columns, directValue)
 		} else {
-			return fmt.Errorf("KeyType:%v %w", mapType.Key(), ErrInvalidMapKeyType)
+			return fmt.Errorf("KeyType=%v %w", mapType.Key(), ErrInvalidMapKeyType)
 		}
 	}
 
@@ -178,7 +178,7 @@ func (transformer *DefaultTransformer) TransformAll(src Rows, dest interface{}) 
 
 	directValue := reflect.Indirect(value)
 	if directValue.Kind() != reflect.Slice {
-		return fmt.Errorf("type:%v %w", value.Type(), ErrNoSlice)
+		return fmt.Errorf("type=%v %w", value.Type(), ErrNoSlice)
 	}
 
 	defer src.Close()
@@ -202,7 +202,7 @@ func (transformer *DefaultTransformer) TransformAll(src Rows, dest interface{}) 
 		if mapType.Key().Kind() == reflect.String {
 			return ScanAllMap(src, columns, mapType, appender)
 		} else {
-			return fmt.Errorf("KeyType:%v %w", mapType.Key(), ErrInvalidMapKeyType)
+			return fmt.Errorf("KeyType=%v %w", mapType.Key(), ErrInvalidMapKeyType)
 		}
 	}
 

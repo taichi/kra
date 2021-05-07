@@ -67,7 +67,7 @@ var ErrUnsupportedValueType = errors.New("kra: unsupported value type")
 func (repo *TypeRepository) Traverse(target reflect.Type, history ...*StructDef) (*StructDef, error) {
 	targetType := Indirect(target)
 	if targetType.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("type: %s %w", targetType.Name(), ErrUnsupportedValueType)
+		return nil, fmt.Errorf("type=%s %w", targetType.Name(), ErrUnsupportedValueType)
 	}
 
 	length := targetType.NumField()
@@ -156,7 +156,7 @@ func visitByName(def *StructDef, value *reflect.Value, names []string) (*FieldDe
 	cur := names[0]
 	if fdef, ok := def.members[cur]; ok {
 		if fdef.Unexported {
-			return nil, nil, fmt.Errorf("name: %s %w", cur, ErrFieldUnexported)
+			return nil, nil, fmt.Errorf("name=%s %w", cur, ErrFieldUnexported)
 		}
 
 		var val reflect.Value = *value
@@ -171,7 +171,7 @@ func visitByName(def *StructDef, value *reflect.Value, names []string) (*FieldDe
 		}
 		return &fdef, &val, nil
 	} else {
-		return nil, nil, fmt.Errorf("name: %s %w", cur, ErrFieldNotFound)
+		return nil, nil, fmt.Errorf("name=%s %w", cur, ErrFieldNotFound)
 	}
 }
 

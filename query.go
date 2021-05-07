@@ -56,7 +56,7 @@ func (query *Query) Verify(resolver ValueResolver) error {
 	}
 
 	if 0 < len(notFound) {
-		return fmt.Errorf("require parameters: %v %w", notFound, ErrLackOfQueryParameters)
+		return fmt.Errorf("require parameters=%v %w", notFound, ErrLackOfQueryParameters)
 	}
 	return nil
 }
@@ -286,7 +286,7 @@ func NewInPart(in, src string) (StmtPart, error) {
 			values := AsSlice(val)
 			length := len(values)
 			if length < 1 {
-				return fmt.Errorf("name: %s %w", name, ErrEmptySlice)
+				return fmt.Errorf("name=%s %w", name, ErrEmptySlice)
 			}
 			var vars []string
 			for i := 0; i < length; i++ {
