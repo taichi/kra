@@ -30,7 +30,7 @@ type Film struct {
 	Code     string
 	Title    string
 	Did      int
-	DateProd time.Time
+	DateProd time.Time `db:"date_prod"`
 	Kind     string
 	Len      pgtype.Interval
 }

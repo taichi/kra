@@ -31,7 +31,7 @@ type Film struct {
 	Code     string
 	Title    string
 	Did      int
-	DateProd time.Time
+	DateProd time.Time `db:"date_prod"`
 	Kind     string
 	Len      pgtype.Interval
 }
@@ -63,7 +63,7 @@ func main() {
 		}
 	}()
 
-	if stmt, err := db.Prepare(ctx, "INSERT INTO films (code, title, did, date_prod, kind, len) VALUES (:code, :title, :did, :dateprod, :kind, :len)"); err != nil {
+	if stmt, err := db.Prepare(ctx, "INSERT INTO films (code, title, did, date_prod, kind, len) VALUES (:code, :title, :did, :date_prod, :kind, :len)"); err != nil {
 		fmt.Println("prepare", err)
 		return
 	} else {

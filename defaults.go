@@ -83,6 +83,34 @@ func (db DB) toBindVar() BindVar {
 	panic("unknown DB")
 }
 
+type SilentValueResolver struct {
+	resolver ValueResolver
+}
+
+func KeepSilent(resolver ValueResolver) ValueResolver {
+	return &SilentValueResolver{resolver}
+}
+
+func (resolver *SilentValueResolver) BindVar(index int) string {
+	return resolver.resolver.BindVar(index)
+}
+
+func (resolver *SilentValueResolver) ByIndex(index int) (interface{}, error) {
+	if value, err := resolver.resolver.ByIndex(index); err != nil {
+		return nil, nil
+	} else {
+		return value, nil
+	}
+}
+
+func (resolver *SilentValueResolver) ByName(name string) (interface{}, error) {
+	if value, err := resolver.resolver.ByName(name); err != nil {
+		return nil, nil
+	} else {
+		return value, nil
+	}
+}
+
 type ResolveFn func(string) (interface{}, bool, error)
 
 type DefaultValueResolver struct {
@@ -101,8 +129,10 @@ func (resolver *DefaultValueResolver) ByIndex(index int) (interface{}, error) {
 	if aryIndex < resolver.originalLength {
 		return resolver.original[aryIndex], nil
 	}
-	return nil, nil
+	return nil, fmt.Errorf("index=%d %w", index, ErrParameterNotFound)
 }
+
+var ErrParameterNotFound = errors.New("kra: parameter not found")
 
 func (resolver *DefaultValueResolver) ByName(name string) (interface{}, error) {
 	condition := strings.ToLower(name)
@@ -113,7 +143,7 @@ func (resolver *DefaultValueResolver) ByName(name string) (interface{}, error) {
 			return val, nil
 		}
 	}
-	return nil, nil
+	return nil, fmt.Errorf("name=%s %w", name, ErrParameterNotFound)
 }
 
 func NewDefaultResolver(core *Core, args ...interface{}) (ValueResolver, error) {

@@ -44,7 +44,7 @@ func doPrepare(core *kra.Core, conn *pgx.Conn, prepare PrepareFn, ctx context.Co
 		return nil, err
 	} else if err := query.Verify(resolver); err != nil {
 		return nil, err
-	} else if rawQuery, _, err := query.Analyze(resolver); err != nil {
+	} else if rawQuery, _, err := query.Analyze(kra.KeepSilent(resolver)); err != nil {
 		return nil, err
 	} else if name, err := toName(rawQuery); err != nil {
 		return nil, err

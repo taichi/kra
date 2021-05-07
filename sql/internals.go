@@ -40,7 +40,7 @@ func doPrepare(core *kra.Core, prepare PrepareFn, ctx context.Context, query str
 		return nil, err
 	} else if err := query.Verify(resolver); err != nil {
 		return nil, err
-	} else if rawQuery, _, err := query.Analyze(resolver); err != nil {
+	} else if rawQuery, _, err := query.Analyze(kra.KeepSilent(resolver)); err != nil {
 		return nil, err
 	} else if stmt, err := prepare(ctx, rawQuery); err != nil {
 		return nil, err
