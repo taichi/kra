@@ -30,50 +30,48 @@ var _ = reflect.Copy
 var _ = strconv.Itoa
 
 var parserATN = []uint16{
-	3, 24715, 42794, 33075, 47597, 16764, 15335, 30598, 22884, 3, 22, 100,
-	4, 2, 9, 2, 4, 3, 9, 3, 4, 4, 9, 4, 4, 5, 9, 5, 4, 6, 9, 6, 4, 7, 9, 7,
-	4, 8, 9, 8, 4, 9, 9, 9, 4, 10, 9, 10, 3, 2, 3, 2, 6, 2, 23, 10, 2, 13,
-	2, 14, 2, 24, 3, 2, 7, 2, 28, 10, 2, 12, 2, 14, 2, 31, 11, 2, 3, 2, 7,
-	2, 34, 10, 2, 12, 2, 14, 2, 37, 11, 2, 3, 3, 3, 3, 3, 3, 6, 3, 42, 10,
-	3, 13, 3, 14, 3, 43, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 7, 4, 51, 10, 4, 12,
-	4, 14, 4, 54, 11, 4, 3, 4, 3, 4, 3, 5, 3, 5, 3, 5, 3, 5, 5, 5, 62, 10,
-	5, 3, 6, 3, 6, 3, 6, 3, 6, 7, 6, 68, 10, 6, 12, 6, 14, 6, 71, 11, 6, 3,
-	7, 3, 7, 3, 8, 3, 8, 3, 8, 5, 8, 78, 10, 8, 3, 8, 6, 8, 81, 10, 8, 13,
-	8, 14, 8, 82, 3, 9, 3, 9, 3, 10, 3, 10, 3, 10, 5, 10, 90, 10, 10, 3, 10,
-	3, 10, 3, 10, 3, 10, 3, 10, 3, 10, 5, 10, 98, 10, 10, 3, 10, 2, 2, 11,
-	2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 4, 4, 2, 15, 15, 17, 17, 4, 2, 10, 10,
-	20, 20, 2, 110, 2, 20, 3, 2, 2, 2, 4, 41, 3, 2, 2, 2, 6, 45, 3, 2, 2, 2,
-	8, 61, 3, 2, 2, 2, 10, 63, 3, 2, 2, 2, 12, 72, 3, 2, 2, 2, 14, 77, 3, 2,
-	2, 2, 16, 84, 3, 2, 2, 2, 18, 97, 3, 2, 2, 2, 20, 29, 5, 4, 3, 2, 21, 23,
-	7, 18, 2, 2, 22, 21, 3, 2, 2, 2, 23, 24, 3, 2, 2, 2, 24, 22, 3, 2, 2, 2,
-	24, 25, 3, 2, 2, 2, 25, 26, 3, 2, 2, 2, 26, 28, 5, 4, 3, 2, 27, 22, 3,
-	2, 2, 2, 28, 31, 3, 2, 2, 2, 29, 27, 3, 2, 2, 2, 29, 30, 3, 2, 2, 2, 30,
-	35, 3, 2, 2, 2, 31, 29, 3, 2, 2, 2, 32, 34, 7, 18, 2, 2, 33, 32, 3, 2,
-	2, 2, 34, 37, 3, 2, 2, 2, 35, 33, 3, 2, 2, 2, 35, 36, 3, 2, 2, 2, 36, 3,
-	3, 2, 2, 2, 37, 35, 3, 2, 2, 2, 38, 42, 5, 6, 4, 2, 39, 42, 5, 18, 10,
-	2, 40, 42, 5, 8, 5, 2, 41, 38, 3, 2, 2, 2, 41, 39, 3, 2, 2, 2, 41, 40,
-	3, 2, 2, 2, 42, 43, 3, 2, 2, 2, 43, 41, 3, 2, 2, 2, 43, 44, 3, 2, 2, 2,
-	44, 5, 3, 2, 2, 2, 45, 46, 7, 7, 2, 2, 46, 47, 7, 11, 2, 2, 47, 52, 5,
-	8, 5, 2, 48, 49, 7, 14, 2, 2, 49, 51, 5, 8, 5, 2, 50, 48, 3, 2, 2, 2, 51,
-	54, 3, 2, 2, 2, 52, 50, 3, 2, 2, 2, 52, 53, 3, 2, 2, 2, 53, 55, 3, 2, 2,
-	2, 54, 52, 3, 2, 2, 2, 55, 56, 7, 12, 2, 2, 56, 7, 3, 2, 2, 2, 57, 62,
-	5, 10, 6, 2, 58, 62, 5, 12, 7, 2, 59, 62, 5, 14, 8, 2, 60, 62, 5, 16, 9,
-	2, 61, 57, 3, 2, 2, 2, 61, 58, 3, 2, 2, 2, 61, 59, 3, 2, 2, 2, 61, 60,
-	3, 2, 2, 2, 62, 9, 3, 2, 2, 2, 63, 64, 9, 2, 2, 2, 64, 69, 7, 10, 2, 2,
-	65, 66, 7, 19, 2, 2, 66, 68, 7, 10, 2, 2, 67, 65, 3, 2, 2, 2, 68, 71, 3,
-	2, 2, 2, 69, 67, 3, 2, 2, 2, 69, 70, 3, 2, 2, 2, 70, 11, 3, 2, 2, 2, 71,
-	69, 3, 2, 2, 2, 72, 73, 7, 13, 2, 2, 73, 13, 3, 2, 2, 2, 74, 78, 7, 16,
-	2, 2, 75, 76, 7, 15, 2, 2, 76, 78, 7, 21, 2, 2, 77, 74, 3, 2, 2, 2, 77,
-	75, 3, 2, 2, 2, 78, 80, 3, 2, 2, 2, 79, 81, 7, 6, 2, 2, 80, 79, 3, 2, 2,
-	2, 81, 82, 3, 2, 2, 2, 82, 80, 3, 2, 2, 2, 82, 83, 3, 2, 2, 2, 83, 15,
-	3, 2, 2, 2, 84, 85, 7, 8, 2, 2, 85, 17, 3, 2, 2, 2, 86, 89, 7, 10, 2, 2,
-	87, 88, 7, 19, 2, 2, 88, 90, 9, 3, 2, 2, 89, 87, 3, 2, 2, 2, 89, 90, 3,
-	2, 2, 2, 90, 98, 3, 2, 2, 2, 91, 98, 7, 11, 2, 2, 92, 98, 7, 12, 2, 2,
-	93, 98, 7, 14, 2, 2, 94, 98, 7, 20, 2, 2, 95, 98, 7, 22, 2, 2, 96, 98,
-	7, 9, 2, 2, 97, 86, 3, 2, 2, 2, 97, 91, 3, 2, 2, 2, 97, 92, 3, 2, 2, 2,
-	97, 93, 3, 2, 2, 2, 97, 94, 3, 2, 2, 2, 97, 95, 3, 2, 2, 2, 97, 96, 3,
-	2, 2, 2, 98, 19, 3, 2, 2, 2, 14, 24, 29, 35, 41, 43, 52, 61, 69, 77, 82,
-	89, 97,
+	3, 24715, 42794, 33075, 47597, 16764, 15335, 30598, 22884, 3, 21, 96, 4,
+	2, 9, 2, 4, 3, 9, 3, 4, 4, 9, 4, 4, 5, 9, 5, 4, 6, 9, 6, 4, 7, 9, 7, 4,
+	8, 9, 8, 4, 9, 9, 9, 4, 10, 9, 10, 3, 2, 3, 2, 6, 2, 23, 10, 2, 13, 2,
+	14, 2, 24, 3, 2, 7, 2, 28, 10, 2, 12, 2, 14, 2, 31, 11, 2, 3, 2, 7, 2,
+	34, 10, 2, 12, 2, 14, 2, 37, 11, 2, 3, 3, 3, 3, 3, 3, 6, 3, 42, 10, 3,
+	13, 3, 14, 3, 43, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 7, 4, 51, 10, 4, 12, 4,
+	14, 4, 54, 11, 4, 3, 4, 3, 4, 3, 5, 3, 5, 3, 5, 3, 5, 5, 5, 62, 10, 5,
+	3, 6, 3, 6, 3, 6, 3, 6, 7, 6, 68, 10, 6, 12, 6, 14, 6, 71, 11, 6, 3, 7,
+	3, 7, 3, 8, 3, 8, 6, 8, 77, 10, 8, 13, 8, 14, 8, 78, 3, 9, 3, 9, 3, 10,
+	3, 10, 3, 10, 5, 10, 86, 10, 10, 3, 10, 3, 10, 3, 10, 3, 10, 3, 10, 3,
+	10, 5, 10, 94, 10, 10, 3, 10, 2, 2, 11, 2, 4, 6, 8, 10, 12, 14, 16, 18,
+	2, 4, 4, 2, 15, 15, 17, 17, 4, 2, 10, 10, 20, 20, 2, 105, 2, 20, 3, 2,
+	2, 2, 4, 41, 3, 2, 2, 2, 6, 45, 3, 2, 2, 2, 8, 61, 3, 2, 2, 2, 10, 63,
+	3, 2, 2, 2, 12, 72, 3, 2, 2, 2, 14, 74, 3, 2, 2, 2, 16, 80, 3, 2, 2, 2,
+	18, 93, 3, 2, 2, 2, 20, 29, 5, 4, 3, 2, 21, 23, 7, 18, 2, 2, 22, 21, 3,
+	2, 2, 2, 23, 24, 3, 2, 2, 2, 24, 22, 3, 2, 2, 2, 24, 25, 3, 2, 2, 2, 25,
+	26, 3, 2, 2, 2, 26, 28, 5, 4, 3, 2, 27, 22, 3, 2, 2, 2, 28, 31, 3, 2, 2,
+	2, 29, 27, 3, 2, 2, 2, 29, 30, 3, 2, 2, 2, 30, 35, 3, 2, 2, 2, 31, 29,
+	3, 2, 2, 2, 32, 34, 7, 18, 2, 2, 33, 32, 3, 2, 2, 2, 34, 37, 3, 2, 2, 2,
+	35, 33, 3, 2, 2, 2, 35, 36, 3, 2, 2, 2, 36, 3, 3, 2, 2, 2, 37, 35, 3, 2,
+	2, 2, 38, 42, 5, 6, 4, 2, 39, 42, 5, 18, 10, 2, 40, 42, 5, 8, 5, 2, 41,
+	38, 3, 2, 2, 2, 41, 39, 3, 2, 2, 2, 41, 40, 3, 2, 2, 2, 42, 43, 3, 2, 2,
+	2, 43, 41, 3, 2, 2, 2, 43, 44, 3, 2, 2, 2, 44, 5, 3, 2, 2, 2, 45, 46, 7,
+	7, 2, 2, 46, 47, 7, 11, 2, 2, 47, 52, 5, 8, 5, 2, 48, 49, 7, 14, 2, 2,
+	49, 51, 5, 8, 5, 2, 50, 48, 3, 2, 2, 2, 51, 54, 3, 2, 2, 2, 52, 50, 3,
+	2, 2, 2, 52, 53, 3, 2, 2, 2, 53, 55, 3, 2, 2, 2, 54, 52, 3, 2, 2, 2, 55,
+	56, 7, 12, 2, 2, 56, 7, 3, 2, 2, 2, 57, 62, 5, 10, 6, 2, 58, 62, 5, 12,
+	7, 2, 59, 62, 5, 14, 8, 2, 60, 62, 5, 16, 9, 2, 61, 57, 3, 2, 2, 2, 61,
+	58, 3, 2, 2, 2, 61, 59, 3, 2, 2, 2, 61, 60, 3, 2, 2, 2, 62, 9, 3, 2, 2,
+	2, 63, 64, 9, 2, 2, 2, 64, 69, 7, 10, 2, 2, 65, 66, 7, 19, 2, 2, 66, 68,
+	7, 10, 2, 2, 67, 65, 3, 2, 2, 2, 68, 71, 3, 2, 2, 2, 69, 67, 3, 2, 2, 2,
+	69, 70, 3, 2, 2, 2, 70, 11, 3, 2, 2, 2, 71, 69, 3, 2, 2, 2, 72, 73, 7,
+	13, 2, 2, 73, 13, 3, 2, 2, 2, 74, 76, 7, 16, 2, 2, 75, 77, 7, 6, 2, 2,
+	76, 75, 3, 2, 2, 2, 77, 78, 3, 2, 2, 2, 78, 76, 3, 2, 2, 2, 78, 79, 3,
+	2, 2, 2, 79, 15, 3, 2, 2, 2, 80, 81, 7, 8, 2, 2, 81, 17, 3, 2, 2, 2, 82,
+	85, 7, 10, 2, 2, 83, 84, 7, 19, 2, 2, 84, 86, 9, 3, 2, 2, 85, 83, 3, 2,
+	2, 2, 85, 86, 3, 2, 2, 2, 86, 94, 3, 2, 2, 2, 87, 94, 7, 11, 2, 2, 88,
+	94, 7, 12, 2, 2, 89, 94, 7, 14, 2, 2, 90, 94, 7, 20, 2, 2, 91, 94, 7, 21,
+	2, 2, 92, 94, 7, 9, 2, 2, 93, 82, 3, 2, 2, 2, 93, 87, 3, 2, 2, 2, 93, 88,
+	3, 2, 2, 2, 93, 89, 3, 2, 2, 2, 93, 90, 3, 2, 2, 2, 93, 91, 3, 2, 2, 2,
+	93, 92, 3, 2, 2, 2, 94, 19, 3, 2, 2, 2, 13, 24, 29, 35, 41, 43, 52, 61,
+	69, 78, 85, 93,
 }
 var deserializer = antlr.NewATNDeserializer(nil)
 var deserializedATN = deserializer.DeserializeFromUInt16(parserATN)
@@ -85,7 +83,7 @@ var literalNames = []string{
 var symbolicNames = []string{
 	"", "SPACES", "BLOCK_COMMENT", "LINE_COMMENT", "DIGIT", "IN", "STRING",
 	"NUMBER", "IDENTIFIER", "OPEN_PAREN", "CLOSE_PAREN", "QMARK", "COMMA",
-	"AT", "DOLLAR", "COLON", "SEMI", "DOT", "STAR", "P", "ANY_SYMBOL",
+	"AT", "DOLLAR", "COLON", "SEMI", "DOT", "STAR", "ANY_SYMBOL",
 }
 
 var ruleNames = []string{
@@ -139,8 +137,7 @@ const (
 	NamedParserSEMI          = 16
 	NamedParserDOT           = 17
 	NamedParserSTAR          = 18
-	NamedParserP             = 19
-	NamedParserANY_SYMBOL    = 20
+	NamedParserANY_SYMBOL    = 19
 )
 
 // NamedParser rules.
@@ -782,35 +779,38 @@ func (p *NamedParser) Parameter() (localctx IParameterContext) {
 
 	p.SetState(59)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 6, p.GetParserRuleContext()) {
-	case 1:
+
+	switch p.GetTokenStream().LA(1) {
+	case NamedParserAT, NamedParserCOLON:
 		p.EnterOuterAlt(localctx, 1)
 		{
 			p.SetState(55)
 			p.NamedParamter()
 		}
 
-	case 2:
+	case NamedParserQMARK:
 		p.EnterOuterAlt(localctx, 2)
 		{
 			p.SetState(56)
 			p.QmarkParameter()
 		}
 
-	case 3:
+	case NamedParserDOLLAR:
 		p.EnterOuterAlt(localctx, 3)
 		{
 			p.SetState(57)
 			p.DecParameter()
 		}
 
-	case 4:
+	case NamedParserSTRING:
 		p.EnterOuterAlt(localctx, 4)
 		{
 			p.SetState(58)
 			p.StaticParameter()
 		}
 
+	default:
+		panic(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
 	}
 
 	return localctx
@@ -1086,14 +1086,6 @@ func (s *DecParameterContext) DOLLAR() antlr.TerminalNode {
 	return s.GetToken(NamedParserDOLLAR, 0)
 }
 
-func (s *DecParameterContext) AT() antlr.TerminalNode {
-	return s.GetToken(NamedParserAT, 0)
-}
-
-func (s *DecParameterContext) P() antlr.TerminalNode {
-	return s.GetToken(NamedParserP, 0)
-}
-
 func (s *DecParameterContext) AllDIGIT() []antlr.TerminalNode {
 	return s.GetTokens(NamedParserDIGIT)
 }
@@ -1142,40 +1134,21 @@ func (p *NamedParser) DecParameter() (localctx IDecParameterContext) {
 	}()
 
 	p.EnterOuterAlt(localctx, 1)
-	p.SetState(75)
-	p.GetErrorHandler().Sync(p)
-
-	switch p.GetTokenStream().LA(1) {
-	case NamedParserDOLLAR:
-		{
-			p.SetState(72)
-			p.Match(NamedParserDOLLAR)
-		}
-
-	case NamedParserAT:
-		{
-			p.SetState(73)
-			p.Match(NamedParserAT)
-		}
-		{
-			p.SetState(74)
-			p.Match(NamedParserP)
-		}
-
-	default:
-		panic(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+	{
+		p.SetState(72)
+		p.Match(NamedParserDOLLAR)
 	}
-	p.SetState(78)
+	p.SetState(74)
 	p.GetErrorHandler().Sync(p)
 	_la = p.GetTokenStream().LA(1)
 
 	for ok := true; ok; ok = _la == NamedParserDIGIT {
 		{
-			p.SetState(77)
+			p.SetState(73)
 			p.Match(NamedParserDIGIT)
 		}
 
-		p.SetState(80)
+		p.SetState(76)
 		p.GetErrorHandler().Sync(p)
 		_la = p.GetTokenStream().LA(1)
 	}
@@ -1265,7 +1238,7 @@ func (p *NamedParser) StaticParameter() (localctx IStaticParameterContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(82)
+		p.SetState(78)
 		p.Match(NamedParserSTRING)
 	}
 
@@ -1385,27 +1358,27 @@ func (p *NamedParser) AnyStmtParts() (localctx IAnyStmtPartsContext) {
 		}
 	}()
 
-	p.SetState(95)
+	p.SetState(91)
 	p.GetErrorHandler().Sync(p)
 
 	switch p.GetTokenStream().LA(1) {
 	case NamedParserIDENTIFIER:
 		p.EnterOuterAlt(localctx, 1)
 		{
-			p.SetState(84)
+			p.SetState(80)
 			p.Match(NamedParserIDENTIFIER)
 		}
-		p.SetState(87)
+		p.SetState(83)
 		p.GetErrorHandler().Sync(p)
 		_la = p.GetTokenStream().LA(1)
 
 		if _la == NamedParserDOT {
 			{
-				p.SetState(85)
+				p.SetState(81)
 				p.Match(NamedParserDOT)
 			}
 			{
-				p.SetState(86)
+				p.SetState(82)
 				_la = p.GetTokenStream().LA(1)
 
 				if !(_la == NamedParserIDENTIFIER || _la == NamedParserSTAR) {
@@ -1421,42 +1394,42 @@ func (p *NamedParser) AnyStmtParts() (localctx IAnyStmtPartsContext) {
 	case NamedParserOPEN_PAREN:
 		p.EnterOuterAlt(localctx, 2)
 		{
-			p.SetState(89)
+			p.SetState(85)
 			p.Match(NamedParserOPEN_PAREN)
 		}
 
 	case NamedParserCLOSE_PAREN:
 		p.EnterOuterAlt(localctx, 3)
 		{
-			p.SetState(90)
+			p.SetState(86)
 			p.Match(NamedParserCLOSE_PAREN)
 		}
 
 	case NamedParserCOMMA:
 		p.EnterOuterAlt(localctx, 4)
 		{
-			p.SetState(91)
+			p.SetState(87)
 			p.Match(NamedParserCOMMA)
 		}
 
 	case NamedParserSTAR:
 		p.EnterOuterAlt(localctx, 5)
 		{
-			p.SetState(92)
+			p.SetState(88)
 			p.Match(NamedParserSTAR)
 		}
 
 	case NamedParserANY_SYMBOL:
 		p.EnterOuterAlt(localctx, 6)
 		{
-			p.SetState(93)
+			p.SetState(89)
 			p.Match(NamedParserANY_SYMBOL)
 		}
 
 	case NamedParserNUMBER:
 		p.EnterOuterAlt(localctx, 7)
 		{
-			p.SetState(94)
+			p.SetState(90)
 			p.Match(NamedParserNUMBER)
 		}
 

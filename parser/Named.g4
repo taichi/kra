@@ -51,7 +51,7 @@ namedParamter: (AT | COLON) IDENTIFIER (DOT IDENTIFIER)*;
 
 qmarkParameter: QMARK;
 
-decParameter: (DOLLAR | AT P) DIGIT+;
+decParameter: DOLLAR DIGIT+;
 
 staticParameter: STRING;
 
@@ -100,7 +100,6 @@ COLON: ':';
 SEMI: ';';
 DOT: '.';
 STAR: '*';
-P: 'p' | 'P';
 
 ANY_SYMBOL:
   '['
