@@ -15,6 +15,7 @@
 package kra
 
 import (
+	"database/sql"
 	"errors"
 )
 
@@ -53,3 +54,5 @@ type Core struct {
 
 var ErrLackOfQueryParameters = errors.New("kra: require example parameters for prepare query with IN operator")
 var ErrNoRecord = errors.New("kra: no record")
+
+type NamedArg sql.NamedArg

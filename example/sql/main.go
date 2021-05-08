@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	stdsql "database/sql"
 	"fmt"
 	"time"
 
@@ -85,7 +84,7 @@ func main() {
 		}
 	}
 	var films []Film
-	if err := db.FindAll(ctx, &films, "SELECT * FROM films WHERE kind IN (:kind)", stdsql.NamedArg{Name: "kind", Value: []string{"CDR", "ZDE"}}); err != nil {
+	if err := db.FindAll(ctx, &films, "SELECT * FROM films WHERE kind IN (:kind)", kra.NamedArg{Name: "kind", Value: []string{"CDR", "ZDE"}}); err != nil {
 		fmt.Println("find", err)
 		return
 	}

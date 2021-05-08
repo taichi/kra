@@ -38,6 +38,8 @@ func NewDefaultResolver(core *Core, args ...interface{}) (ValueResolver, error) 
 		switch val := arg.(type) {
 		case map[string]interface{}:
 			values = append(values, toMapFn(val))
+		case NamedArg:
+			values = append(values, toNamedArgFn(sql.NamedArg(val)))
 		case sql.NamedArg:
 			values = append(values, toNamedArgFn(val))
 		default:
