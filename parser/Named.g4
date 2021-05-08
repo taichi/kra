@@ -78,12 +78,6 @@ DIGIT: [0-9];
 
 IN: [iI] [nN];
 
-OPEN_PAREN: '(';
-CLOSE_PAREN: ')';
-
-QMARK: '?';
-COMMA: ',';
-
 fragment DQUOTA_STRING: '"' ('\\' . | '""' | ~('"' | '\\'))* '"';
 fragment SQUOTA_STRING: '\'' ('\\' . | '\'\'' | ~('\'' | '\\'))* '\'';
 
@@ -96,6 +90,10 @@ fragment LETTER: UNICODE_LETTER | '_';
 fragment UNICODE_LETTER: [\p{L}];
 fragment UNICODE_DIGIT: [\p{Nd}];
 
+OPEN_PAREN: '(';
+CLOSE_PAREN: ')';
+QMARK: '?';
+COMMA: ',';
 AT: '@';
 DOLLAR: '$';
 COLON: ':';
