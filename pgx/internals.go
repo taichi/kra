@@ -38,7 +38,7 @@ func doExec(core *kra.Core, exec ExecFn, ctx context.Context, query string, args
 
 type PrepareFn func(ctx context.Context, name, query string) (sd *pgconn.StatementDescription, err error)
 
-func doPrepare(core *kra.Core, conn *pgx.Conn, count int, prepare PrepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
+func doPrepare(core *kra.Core, conn *pgx.Conn, count int64, prepare PrepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
 	if query, err := core.Parse(query); err != nil {
 		return nil, err
 	} else if resolver, err := core.NewResolver(examples...); err != nil {
@@ -54,7 +54,7 @@ func doPrepare(core *kra.Core, conn *pgx.Conn, count int, prepare PrepareFn, ctx
 	}
 }
 
-func toName(count int) string {
+func toName(count int64) string {
 	return fmt.Sprintf("kra-%d", count)
 }
 

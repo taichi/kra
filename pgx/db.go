@@ -16,6 +16,7 @@ package pgx
 
 import (
 	"context"
+	"sync/atomic"
 	"time"
 
 	"github.com/jackc/pgconn"
@@ -46,7 +47,7 @@ func OpenConfig(ctx context.Context, config *pgxpool.Config) (*DB, error) {
 type Conn struct {
 	conn  *pgx.Conn
 	core  *kra.Core
-	count int
+	count int64
 }
 
 func Connect(ctx context.Context, connString string) (*Conn, error) {
@@ -134,7 +135,7 @@ func (conn *Conn) FindAll(ctx context.Context, dest interface{}, query string, a
 type DB struct {
 	pool  *pgxpool.Pool
 	core  *kra.Core
-	count int
+	count int64
 }
 
 func NewDB(db *pgxpool.Pool, core *kra.Core) *DB {
@@ -186,7 +187,8 @@ func (db *DB) Prepare(ctx context.Context, query string, examples ...interface{}
 	}
 
 	pooled := conn.Conn()
-	db.count++
+
+	atomic.AddInt64(&db.count, 1)
 	if stmt, err := doPrepare(db.core, pooled, db.count, pooled.Prepare, ctx, query, examples...); err != nil {
 		return nil, err
 	} else {
@@ -210,7 +212,7 @@ type Tx struct {
 	tx    pgx.Tx
 	conn  *pgx.Conn
 	core  *kra.Core
-	count *int
+	count *int64
 }
 
 func (tx *Tx) Tx() pgx.Tx {
@@ -253,7 +255,7 @@ func (tx *Tx) LargeObjects() pgx.LargeObjects {
 }
 
 func (tx *Tx) Prepare(ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
-	*tx.count += 1
+	atomic.AddInt64(tx.count, 1)
 	return doPrepare(tx.core, tx.conn, *tx.count, tx.tx.Prepare, ctx, query, examples...)
 }
 
