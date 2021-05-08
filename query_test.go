@@ -123,3 +123,39 @@ func TestATMark(t *testing.T) {
 		assert.Equal(t, "INSERT INTO foo ( bar , baz ) VALUES ( $1 , $2 )", raw)
 	}
 }
+
+func TestNamedParameter(t *testing.T) {
+	if query, err := NewQuery("SELECT foo, bar FROM baz WHERE foo = :饅頭 AND baz = :予算"); err != nil {
+		t.Error(err)
+		return
+	} else if raw, vars, err := query.Analyze(&TestVR{
+		map[string]interface{}{
+			"饅頭": "11111",
+			"予算": []string{"foo", "bar", "baz"},
+		},
+	}); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, "SELECT foo , bar FROM baz WHERE foo = $1 AND baz = $2", raw)
+		assert.Equal(t, []interface{}{"11111", []string{"foo", "bar", "baz"}}, vars)
+	}
+}
+
+func TestNamedATParameter(t *testing.T) {
+	if query, err := NewQuery("SELECT foo, bar FROM baz WHERE foo = @饅頭.こしあん AND baz = @予算"); err != nil {
+		t.Error(err)
+		return
+	} else if raw, vars, err := query.Analyze(&TestVR{
+		map[string]interface{}{
+			"饅頭.こしあん": "11111",
+			"予算":      []string{"foo", "bar", "baz"},
+		},
+	}); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, "SELECT foo , bar FROM baz WHERE foo = $1 AND baz = $2", raw)
+		assert.Equal(t, []interface{}{"11111", []string{"foo", "bar", "baz"}}, vars)
+	}
+}
