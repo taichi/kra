@@ -91,11 +91,8 @@ func (resolver *DefaultValueResolver) ByIndex(index int) (interface{}, error) {
 var ErrParameterNotFound = errors.New("kra: parameter not found")
 
 func (resolver *DefaultValueResolver) ByName(name string) (interface{}, error) {
-	condition := strings.ToLower(name)
 	for _, fn := range resolver.values {
-		if val, ok, err := fn(condition); err != nil {
-			return nil, err
-		} else if ok {
+		if val, ok, _ := fn(name); ok {
 			return val, nil
 		}
 	}
@@ -103,8 +100,12 @@ func (resolver *DefaultValueResolver) ByName(name string) (interface{}, error) {
 }
 
 func toMapFn(arg map[string]interface{}) ResolveFn {
+	lowerMap := make(map[string]interface{}, len(arg))
+	for key, val := range arg {
+		lowerMap[strings.ToLower(key)] = val
+	}
 	return func(name string) (interface{}, bool, error) {
-		res, ok := arg[name]
+		res, ok := lowerMap[strings.ToLower(name)]
 		return res, ok, nil
 	}
 }
@@ -125,11 +126,7 @@ func toStructFn(core *Core, arg interface{}) (ResolveFn, error) {
 	} else {
 		return func(name string) (interface{}, bool, error) {
 			if _, value, err := def.ByName(root, name); err != nil {
-				if errors.Is(err, ErrFieldUnexported) {
-					return nil, false, err
-				} else {
-					return nil, true, nil
-				}
+				return nil, false, err
 			} else {
 				return value.Interface(), true, nil
 			}
