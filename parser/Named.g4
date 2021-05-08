@@ -45,13 +45,13 @@ stmt: (inExpr | anyStmtParts | parameter)+;
 
 inExpr: IN OPEN_PAREN parameter (COMMA parameter)* CLOSE_PAREN;
 
-parameter: namedParamter | qmarkParameter | dDecParameter | staticParameter;
+parameter: namedParamter | qmarkParameter | decParameter | staticParameter;
 
 namedParamter: (AT | COLON) IDENTIFIER (DOT IDENTIFIER)*;
 
 qmarkParameter: QMARK;
 
-dDecParameter: DDEC;
+decParameter: (DOLLAR | AT P) DIGIT+;
 
 staticParameter: STRING;
 
@@ -74,7 +74,7 @@ BLOCK_COMMENT: '/*' .*? '*/' -> channel(HIDDEN);
 LINE_COMMENT: '--' .*? '\n' -> channel(HIDDEN);
 
 fragment HEX_DIGIT: [0-9a-fA-F];
-fragment DIGIT: [0-9];
+DIGIT: [0-9];
 
 IN: [iI] [nN];
 
@@ -82,8 +82,6 @@ OPEN_PAREN: '(';
 CLOSE_PAREN: ')';
 
 QMARK: '?';
-DDEC: '$' DIGIT+;
-
 COMMA: ',';
 
 fragment DQUOTA_STRING: '"' ('\\' . | '""' | ~('"' | '\\'))* '"';
@@ -99,10 +97,12 @@ fragment UNICODE_LETTER: [\p{L}];
 fragment UNICODE_DIGIT: [\p{Nd}];
 
 AT: '@';
+DOLLAR: '$';
 COLON: ':';
 SEMI: ';';
 DOT: '.';
 STAR: '*';
+P: 'p' | 'P';
 
 ANY_SYMBOL:
   '['

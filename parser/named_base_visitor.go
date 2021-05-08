@@ -32,7 +32,7 @@ func (v *BaseNamedVisitor) VisitQmarkParameter(ctx *QmarkParameterContext) inter
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseNamedVisitor) VisitDDecParameter(ctx *DDecParameterContext) interface{} {
+func (v *BaseNamedVisitor) VisitDecParameter(ctx *DecParameterContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

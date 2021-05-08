@@ -203,7 +203,7 @@ func (visitor *ParameterVisitor) VisitQmarkParameter(ctx *parser.QmarkParameterC
 	return nil
 }
 
-func (visitor *ParameterVisitor) VisitDDecParameter(ctx *parser.DDecParameterContext) interface{} {
+func (visitor *ParameterVisitor) VisitDecParameter(ctx *parser.DecParameterContext) interface{} {
 	visitor.other = append(visitor.other, ctx.GetText())
 	return nil
 }
@@ -253,10 +253,14 @@ func (collector *PartsCollector) VisitQmarkParameter(ctx *parser.QmarkParameterC
 	})
 }
 
-func (collector *PartsCollector) VisitDDecParameter(ctx *parser.DDecParameterContext) interface{} {
+func (collector *PartsCollector) VisitDecParameter(ctx *parser.DecParameterContext) interface{} {
 	collector.Use(DDEC)
+	var buf strings.Builder
+	for _, token := range ctx.AllDIGIT() {
+		buf.WriteString(token.GetText())
+	}
 	return collector.Add(func() (StmtPart, error) {
-		return NewDMarkParameterPart(ctx.GetText())
+		return NewDMarkParameterPart(buf.String())
 	})
 }
 
@@ -326,8 +330,8 @@ func NewQMarkParameterPart(src string) (StmtPart, error) {
 	}, nil
 }
 
-func NewDMarkParameterPart(src string) (StmtPart, error) {
-	srcIndex, err := strconv.Atoi(src[1:])
+func NewDMarkParameterPart(digit string) (StmtPart, error) {
+	srcIndex, err := strconv.Atoi(digit)
 	if err != nil {
 		return nil, err
 	}

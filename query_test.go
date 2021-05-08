@@ -23,21 +23,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type TestVR struct{}
+type TestVR struct {
+	values map[string]interface{}
+}
 
 func (vr *TestVR) BindVar(index int) string {
 	return fmt.Sprintf("$%d", index)
 }
 
 func (vr *TestVR) ByIndex(index int) (interface{}, error) {
-	fmt.Println("ByIndex", index)
 	return nil, nil
 }
 func (vr *TestVR) ByName(name string) (interface{}, error) {
-	if name == "予算" {
-		return []string{"foo", "bar", "baz"}, nil
-	}
-	return nil, nil
+	return vr.values[name], nil
 }
 
 func TestParse(t *testing.T) {
@@ -45,7 +43,11 @@ func TestParse(t *testing.T) {
 		t.Error(err)
 	} else if query, err := NewQuery(string(fixtureFile)); err != nil {
 		t.Error(err)
-	} else if sql, _, err := query.Analyze(&TestVR{}); err != nil {
+	} else if sql, _, err := query.Analyze(&TestVR{
+		map[string]interface{}{
+			"予算": []string{"foo", "bar", "baz"},
+		},
+	}); err != nil {
 		t.Error(err)
 	} else {
 		t.Log(sql)
@@ -84,4 +86,40 @@ func TestAsSlice(t *testing.T) {
 	byteArray[0] = '@'
 	byteArray[1] = 'c'
 	assert.ElementsMatch(t, AsSlice(byteArray), []interface{}{byteArray})
+}
+
+func TestQMark(t *testing.T) {
+	if query, err := NewQuery("INSERT INTO foo (bar, baz) VALUES (?, ?)"); err != nil {
+		t.Error(err)
+		return
+	} else if raw, _, err := query.Analyze(&TestVR{}); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, "INSERT INTO foo ( bar , baz ) VALUES ( $1 , $2 )", raw)
+	}
+}
+
+func TestDMark(t *testing.T) {
+	if query, err := NewQuery("INSERT INTO foo (bar, baz) VALUES ($1, $2)"); err != nil {
+		t.Error(err)
+		return
+	} else if raw, _, err := query.Analyze(&TestVR{}); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, "INSERT INTO foo ( bar , baz ) VALUES ( $1 , $2 )", raw)
+	}
+}
+
+func TestATMark(t *testing.T) {
+	if query, err := NewQuery("INSERT INTO foo (bar, baz) VALUES (@p1, @p2)"); err != nil {
+		t.Error(err)
+		return
+	} else if raw, _, err := query.Analyze(&TestVR{}); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, "INSERT INTO foo ( bar , baz ) VALUES ( $1 , $2 )", raw)
+	}
 }
