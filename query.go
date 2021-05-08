@@ -102,7 +102,7 @@ type BindingStyle uint
 const (
 	NAMED BindingStyle = 1 << iota
 	QMARK
-	DDEC
+	DEC
 )
 
 type PartsCollector struct {
@@ -112,7 +112,9 @@ type PartsCollector struct {
 	dynamicParameters []string
 }
 
-func (collector *PartsCollector) Add(fn func() (StmtPart, error)) error {
+type StmtPartFn = func() (StmtPart, error)
+
+func (collector *PartsCollector) Add(fn StmtPartFn) error {
 	if part, err := fn(); err != nil {
 		return err
 	} else {
@@ -127,8 +129,8 @@ func (collector *PartsCollector) Use(style BindingStyle) {
 
 func (collector *PartsCollector) Use2orMoreStyles() bool {
 	NQ := NAMED | QMARK
-	ND := NAMED | DDEC
-	QD := QMARK | DDEC
+	ND := NAMED | DEC
+	QD := QMARK | DEC
 	return collector.style&NQ == NQ || collector.style&ND == ND || collector.style&QD == QD
 }
 
@@ -181,8 +183,9 @@ func (collector *PartsCollector) VisitStmt(ctx *parser.StmtContext) interface{} 
 
 type ParameterVisitor struct {
 	parser.BaseNamedVisitor
-	named []string
-	other []string
+	parent *PartsCollector
+	named  []string
+	other  []StmtPartFn
 }
 
 func (visitor *ParameterVisitor) VisitInExpr(ctx *parser.InExprContext) interface{} {
@@ -199,22 +202,29 @@ func (visitor *ParameterVisitor) VisitNamedParamter(ctx *parser.NamedParamterCon
 }
 
 func (visitor *ParameterVisitor) VisitQmarkParameter(ctx *parser.QmarkParameterContext) interface{} {
-	visitor.other = append(visitor.other, ctx.GetText())
+	visitor.parent.Use(QMARK)
+	visitor.other = append(visitor.other, func() (StmtPart, error) {
+		return NewQMarkParameterPart(ctx.GetText())
+	})
 	return nil
 }
 
 func (visitor *ParameterVisitor) VisitDecParameter(ctx *parser.DecParameterContext) interface{} {
-	visitor.other = append(visitor.other, ctx.GetText())
+	visitor.parent.Use(DEC)
+	visitor.other = append(visitor.other, toDMarkParameterPart(ctx))
 	return nil
 }
 
 func (visitor *ParameterVisitor) VisitStaticParameter(ctx *parser.StaticParameterContext) interface{} {
-	visitor.other = append(visitor.other, ctx.GetText())
+	visitor.other = append(visitor.other, func() (StmtPart, error) {
+		return NewStringPart(ctx.GetText())
+	})
 	return nil
 }
 
 func (collector *PartsCollector) VisitInExpr(ctx *parser.InExprContext) interface{} {
 	pVisitor := ParameterVisitor{}
+	pVisitor.parent = collector
 	ctx.Accept(&pVisitor)
 	if 0 < len(pVisitor.named) {
 		// IN句の一部にnamed parameterが含まれている場合のみ、BindVarを自動的に決める
@@ -224,7 +234,7 @@ func (collector *PartsCollector) VisitInExpr(ctx *parser.InExprContext) interfac
 		})
 	} else {
 		return collector.Add(func() (StmtPart, error) {
-			return NewStringPart(ctx.GetText())
+			return NewStaticInPart(ctx.IN().GetText(), pVisitor.other)
 		})
 	}
 }
@@ -253,15 +263,19 @@ func (collector *PartsCollector) VisitQmarkParameter(ctx *parser.QmarkParameterC
 	})
 }
 
-func (collector *PartsCollector) VisitDecParameter(ctx *parser.DecParameterContext) interface{} {
-	collector.Use(DDEC)
+func toDMarkParameterPart(ctx *parser.DecParameterContext) StmtPartFn {
 	var buf strings.Builder
 	for _, token := range ctx.AllDIGIT() {
 		buf.WriteString(token.GetText())
 	}
-	return collector.Add(func() (StmtPart, error) {
+	return func() (StmtPart, error) {
 		return NewDMarkParameterPart(buf.String())
-	})
+	}
+}
+
+func (collector *PartsCollector) VisitDecParameter(ctx *parser.DecParameterContext) interface{} {
+	collector.Use(DEC)
+	return collector.Add(toDMarkParameterPart(ctx))
 }
 
 func (collector *PartsCollector) VisitStaticParameter(ctx *parser.StaticParameterContext) interface{} {
@@ -296,10 +310,28 @@ func NewInPart(in, src string) (StmtPart, error) {
 			for i := 0; i < length; i++ {
 				vars = append(vars, resolver.BindVar(state.NextIndex()))
 			}
-			stmt := fmt.Sprintf("%s (%s)", in, strings.Join(vars, " ,"))
+			stmt := fmt.Sprintf("%s (%s)", in, strings.Join(vars, " , "))
 			state.AppendStmt(stmt)
 			state.ConcatVar(values)
 		}
+		return nil
+	}, nil
+}
+
+func NewStaticInPart(in string, parts []StmtPartFn) (StmtPart, error) {
+	return func(state *ResolvingState, resolver ValueResolver) error {
+		state.AppendStmt(fmt.Sprintf("%s (", in))
+		length := len(parts)
+		for index, partFn := range parts {
+			if part, err := partFn(); err != nil {
+				return err
+			} else if err := part(state, resolver); err != nil {
+				return err
+			} else if index+1 < length {
+				state.AppendStmt(",")
+			}
+		}
+		state.AppendStmt(")")
 		return nil
 	}, nil
 }

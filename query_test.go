@@ -32,7 +32,7 @@ func (vr *TestVR) BindVar(index int) string {
 }
 
 func (vr *TestVR) ByIndex(index int) (interface{}, error) {
-	return nil, nil
+	return vr.values[fmt.Sprintf("%d", index)], nil
 }
 func (vr *TestVR) ByName(name string) (interface{}, error) {
 	return vr.values[name], nil
@@ -149,13 +149,49 @@ func TestNamedATParameter(t *testing.T) {
 	} else if raw, vars, err := query.Analyze(&TestVR{
 		map[string]interface{}{
 			"饅頭.こしあん": "11111",
-			"予算":      []string{"foo", "bar", "baz"},
+			"予算":      "foo",
 		},
 	}); err != nil {
 		t.Error(err)
 		return
 	} else {
 		assert.Equal(t, "SELECT foo , bar FROM baz WHERE foo = $1 AND baz = $2", raw)
-		assert.Equal(t, []interface{}{"11111", []string{"foo", "bar", "baz"}}, vars)
+		assert.Equal(t, []interface{}{"11111", "foo"}, vars)
+	}
+}
+
+func TestINOperator_AutoExpansion(t *testing.T) {
+	if query, err := NewQuery("SELECT foo, bar FROM baz WHERE foo IN (@予算, ?)"); err != nil {
+		t.Error(err)
+		return
+	} else if raw, vars, err := query.Analyze(&TestVR{
+		map[string]interface{}{
+			"予算": []string{"foo", "bar", "baz"},
+		},
+	}); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, "SELECT foo , bar FROM baz WHERE foo IN ($1 , $2 , $3)", raw)
+		assert.Equal(t, []interface{}{"foo", "bar", "baz"}, vars)
+	}
+}
+
+func TestINOperator_WithoutExpansion_Q(t *testing.T) {
+	if query, err := NewQuery("SELECT foo, bar FROM baz WHERE foo IN (?, ?, ?)"); err != nil {
+		t.Error(err)
+		return
+	} else if raw, vars, err := query.Analyze(&TestVR{
+		map[string]interface{}{
+			"1": "foo",
+			"2": "bar",
+			"3": "baz",
+		},
+	}); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, "SELECT foo , bar FROM baz WHERE foo IN ( $1 , $2 , $3 )", raw)
+		assert.Equal(t, []interface{}{"foo", "bar", "baz"}, vars)
 	}
 }
