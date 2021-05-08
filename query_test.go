@@ -112,15 +112,31 @@ func TestDMark(t *testing.T) {
 	}
 }
 
-func TestATMark(t *testing.T) {
-	if query, err := NewQuery("INSERT INTO foo (bar, baz) VALUES (@p1, @p2)"); err != nil {
-		t.Error(err)
-		return
-	} else if raw, _, err := query.Analyze(&TestVR{}); err != nil {
-		t.Error(err)
-		return
+func TestMultipleStatemtents(t *testing.T) {
+	if _, err := NewQuery("INSERT INTO foo (bar, baz) VALUES (?, ?); SELECT * FROM foo"); err != nil {
+		assert.ErrorIs(t, err, ErrMultipleStatements)
 	} else {
-		assert.Equal(t, "INSERT INTO foo ( bar , baz ) VALUES ( $1 , $2 )", raw)
+		t.Fail()
+	}
+}
+
+func TestMultipleParameterStyles(t *testing.T) {
+	if _, err := NewQuery("INSERT INTO foo (bar, baz) VALUES (?, $2)"); err != nil {
+		assert.ErrorIs(t, err, ErrMultipleParameterStyles)
+	} else {
+		t.Fail()
+	}
+
+	if _, err := NewQuery("INSERT INTO foo (bar, baz) VALUES (@name, ?)"); err != nil {
+		assert.ErrorIs(t, err, ErrMultipleParameterStyles)
+	} else {
+		t.Fail()
+	}
+
+	if _, err := NewQuery("INSERT INTO foo (bar, baz) VALUES (@name, $1)"); err != nil {
+		assert.ErrorIs(t, err, ErrMultipleParameterStyles)
+	} else {
+		t.Fail()
 	}
 }
 
@@ -193,5 +209,43 @@ func TestINOperator_WithoutExpansion_Q(t *testing.T) {
 	} else {
 		assert.Equal(t, "SELECT foo , bar FROM baz WHERE foo IN ( $1 , $2 , $3 )", raw)
 		assert.Equal(t, []interface{}{"foo", "bar", "baz"}, vars)
+	}
+}
+
+func TestINOperator_WithoutExpansion_DEC(t *testing.T) {
+	if query, err := NewQuery("SELECT foo, bar FROM baz WHERE foo IN ($2, $1, $3)"); err != nil {
+		t.Error(err)
+		return
+	} else if raw, vars, err := query.Analyze(&TestVR{
+		map[string]interface{}{
+			"1": "foo",
+			"2": "bar",
+			"3": "baz",
+		},
+	}); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, "SELECT foo , bar FROM baz WHERE foo IN ( $1 , $2 , $3 )", raw)
+		assert.Equal(t, []interface{}{"bar", "foo", "baz"}, vars)
+	}
+}
+
+func TestINOperator_WithoutExpansion_DEC_Static(t *testing.T) {
+	if query, err := NewQuery("SELECT foo, bar FROM baz WHERE foo IN ($2, $1, 'aaa',  $3)"); err != nil {
+		t.Error(err)
+		return
+	} else if raw, vars, err := query.Analyze(&TestVR{
+		map[string]interface{}{
+			"1": "foo",
+			"2": "bar",
+			"3": "baz",
+		},
+	}); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, "SELECT foo , bar FROM baz WHERE foo IN ( $1 , $2 , 'aaa' , $3 )", raw)
+		assert.Equal(t, []interface{}{"bar", "foo", "baz"}, vars)
 	}
 }
