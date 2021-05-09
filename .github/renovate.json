@@ -1,5 +1,10 @@
 {
   "extends": ["config:base"],
   "schedule": ["on friday"],
-  "automerge": true
+  "automerge": true,
+  "packageRules": [
+    {
+      "excludePackageNames": ["github.com/antlr/antlr4"]
+    }
+  ]
 }
