@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sync/atomic"
 
 	"github.com/jackc/pgconn"
 	pgx "github.com/jackc/pgx/v4"
@@ -38,7 +39,8 @@ func doExec(core *kra.Core, exec ExecFn, ctx context.Context, query string, args
 
 type PrepareFn func(ctx context.Context, name, query string) (sd *pgconn.StatementDescription, err error)
 
-func doPrepare(core *kra.Core, conn *pgx.Conn, count int64, prepare PrepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
+func doPrepare(core *kra.Core, conn *pgx.Conn, count *int64, prepare PrepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
+	atomic.AddInt64(count, 1)
 	if query, err := core.Parse(query); err != nil {
 		return nil, err
 	} else if resolver, err := core.NewResolver(examples...); err != nil {
@@ -47,7 +49,7 @@ func doPrepare(core *kra.Core, conn *pgx.Conn, count int64, prepare PrepareFn, c
 		return nil, err
 	} else if rawQuery, _, err := query.Analyze(kra.KeepSilent(resolver)); err != nil {
 		return nil, err
-	} else if stmt, err := prepare(ctx, toName(count), rawQuery); err != nil {
+	} else if stmt, err := prepare(ctx, toName(*count), rawQuery); err != nil {
 		return nil, err
 	} else {
 		return &Stmt{stmt, conn, core, query}, nil

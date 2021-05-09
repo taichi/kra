@@ -16,7 +16,6 @@ package pgx
 
 import (
 	"context"
-	"sync/atomic"
 	"time"
 
 	"github.com/jackc/pgconn"
@@ -111,8 +110,7 @@ func (conn *Conn) Ping(ctx context.Context) error {
 }
 
 func (conn *Conn) Prepare(ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
-	conn.count++
-	return doPrepare(conn.core, conn.conn, conn.count, conn.conn.Prepare, ctx, query, examples...)
+	return doPrepare(conn.core, conn.conn, &conn.count, conn.conn.Prepare, ctx, query, examples...)
 }
 
 func (conn *Conn) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
@@ -188,8 +186,7 @@ func (db *DB) Prepare(ctx context.Context, query string, examples ...interface{}
 
 	pooled := conn.Conn()
 
-	atomic.AddInt64(&db.count, 1)
-	if stmt, err := doPrepare(db.core, pooled, db.count, pooled.Prepare, ctx, query, examples...); err != nil {
+	if stmt, err := doPrepare(db.core, pooled, &db.count, pooled.Prepare, ctx, query, examples...); err != nil {
 		return nil, err
 	} else {
 		return &PooledStmt{stmt, conn}, nil
@@ -251,8 +248,7 @@ func (tx *Tx) SendBatch(ctx context.Context, batch *Batch) *BatchResults {
 }
 
 func (tx *Tx) Prepare(ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
-	atomic.AddInt64(tx.count, 1)
-	return doPrepare(tx.core, tx.conn, *tx.count, tx.tx.Prepare, ctx, query, examples...)
+	return doPrepare(tx.core, tx.conn, tx.count, tx.tx.Prepare, ctx, query, examples...)
 }
 
 func (tx *Tx) Exec(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
