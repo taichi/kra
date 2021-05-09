@@ -212,3 +212,66 @@ func TestFindAllMap(t *testing.T) {
 	assert.Equal(t, 3, len(dstAry))
 	assert.Equal(t, "111", dstAry[0]["test_key"])
 }
+
+func TestPrepare_Exec(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	ctx := context.Background()
+
+	stmt, err := table.db.Prepare(ctx, table.insert)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if res, err := stmt.Exec(ctx, &fixture{"4444", "dddd"}); err != nil {
+		t.Error(err)
+		return
+	} else if count, err := res.RowsAffected(); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, int64(1), count)
+	}
+}
+
+func TestPrepare_Query(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = insertData(t, table)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	ctx := context.Background()
+
+	stmt, err := table.db.Prepare(ctx, table.find)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if rows, err := stmt.Query(ctx, "111"); err != nil {
+		t.Error(err)
+		return
+	} else if rows.rows.Next() == false {
+		t.Fail()
+	} else {
+		var data fixture
+		sErr := rows.Scan(&data)
+		if sErr != nil {
+			t.Error(sErr)
+			return
+		}
+		assert.Equal(t, "aa", data.TestValue)
+	}
+}
