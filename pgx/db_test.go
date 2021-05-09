@@ -221,6 +221,8 @@ func TestPrepare_Exec(t *testing.T) {
 		return
 	}
 
+	defer stmt.Close(ctx)
+
 	if res, err := stmt.Exec(ctx, &fixture{"4444", "dddd"}); err != nil {
 		t.Error(err)
 		return
@@ -249,6 +251,8 @@ func TestPrepare_Query(t *testing.T) {
 		t.Error(err)
 		return
 	}
+
+	defer stmt.Close(ctx)
 
 	if rows, err := stmt.Query(ctx, "111"); err != nil {
 		t.Error(err)
@@ -351,6 +355,8 @@ func TestStatementDuplicate_Different_Conn(t *testing.T) {
 		t.Error(err)
 		return
 	}
+
+	defer stmt.Close(ctx)
 
 	conn, err := Connect(ctx, connURL)
 	if err != nil {
