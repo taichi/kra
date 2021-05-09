@@ -101,7 +101,6 @@ func doFindAll(core *kra.Core, query QueryFn, ctx context.Context, dst interface
 type CopyFromFn func(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error)
 
 var ErrEmptySlice = errors.New("kra: empty slice")
-var ErrDifferentType = errors.New("kra: different type found")
 
 func doCopyFrom(core *kra.Core, copyFrom CopyFromFn, ctx context.Context, tableName Identifier, src interface{}) (int64, error) {
 	directValue := reflect.Indirect(reflect.ValueOf(src))
@@ -115,7 +114,6 @@ func doCopyFrom(core *kra.Core, copyFrom CopyFromFn, ctx context.Context, tableN
 		return 0, ErrEmptySlice
 	}
 
-	var elementType reflect.Type
 	var elementDef *kra.StructDef
 	var columnNames []string
 	var columnLength int
@@ -124,8 +122,8 @@ func doCopyFrom(core *kra.Core, copyFrom CopyFromFn, ctx context.Context, tableN
 		element := directValue.Index(index)
 		if element.Kind() != reflect.Struct {
 			return 0, fmt.Errorf("type=%v %w", element.Kind(), kra.ErrUnsupportedValueType)
-		} else if elementType == nil {
-			elementType = element.Type()
+		} else if columnNames == nil {
+			elementType := element.Type()
 			if def, err := core.Repository.Lookup(elementType); err != nil {
 				return 0, err
 			} else {
@@ -137,8 +135,6 @@ func doCopyFrom(core *kra.Core, copyFrom CopyFromFn, ctx context.Context, tableN
 					columnLength++
 				}
 			}
-		} else if elementType != element.Type() {
-			return 0, fmt.Errorf("type=%v current=%v %w", elementType, element.Type(), ErrDifferentType)
 		}
 
 		values := make([]interface{}, columnLength)
