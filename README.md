@@ -1,5 +1,7 @@
 # kra
 
+![](https://github.com/taichi/kra/actions/workflows/push.yml/badge.svg)
+
 **SQL is the best way to access database**.
 
 kra is a relational database access helper library on top of go.
