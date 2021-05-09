@@ -250,10 +250,6 @@ func (tx *Tx) SendBatch(ctx context.Context, batch *Batch) *BatchResults {
 	return &BatchResults{results, tx.core}
 }
 
-func (tx *Tx) LargeObjects() pgx.LargeObjects {
-	return tx.tx.LargeObjects()
-}
-
 func (tx *Tx) Prepare(ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
 	atomic.AddInt64(tx.count, 1)
 	return doPrepare(tx.core, tx.conn, *tx.count, tx.tx.Prepare, ctx, query, examples...)
