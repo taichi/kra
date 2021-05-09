@@ -1,12 +1,21 @@
 # kra
 
-simple RDB access library
+**SQL is the best way to access database**.
 
-# Main Features
+kra is a relational database access helper library on top of go.
 
-- named parameter
+kra works with `database/sql`, so all of database with `database/sql` based driver is supported.
+and kra also works with `pgx` native API. kra focuses on the convenient use of `CopyFrom`.
+
+# Features
+
+- Named parameter support with dot notation
 - IN statement variable expansion
-- structure mapping
+- Rows to structure/map mapping
+- Selectable base API. pgx or database/sql
+- Highly configurable behavior
+- Context is required for network access APIs
+- All wrapper object has escape hatches
 
 # Getting Started
 
@@ -175,3 +184,9 @@ func main() {
 	fmt.Printf("%v\n", films)
 }
 ```
+
+# Related OSS
+
+- [pgx](https://github.com/jackc/pgx)
+- [scany](https://github.com/georgysavva/scany)
+- [sqlx](https://github.com/jmoiron/sqlx)
