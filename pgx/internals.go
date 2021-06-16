@@ -121,7 +121,7 @@ func doCopyFrom(core *kra.Core, copyFrom CopyFromFn, ctx context.Context, tableN
 	var columnLength int
 	rowSrc := make([][]interface{}, length)
 	for index := 0; index < length; index++ {
-		element := directValue.Index(index)
+		element := reflect.Indirect(directValue.Index(index))
 		if element.Kind() != reflect.Struct {
 			return 0, fmt.Errorf("type=%v %w", element.Kind(), kra.ErrUnsupportedValueType)
 		} else if columnNames == nil {

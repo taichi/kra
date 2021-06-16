@@ -291,6 +291,27 @@ func TestCopyFrom(t *testing.T) {
 	}
 }
 
+func TestCopyFromPtr(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	data := []*fixture{
+		{"111", "aa"},
+		{"222", "bbbb"},
+		{"333", "ccc"},
+	}
+
+	if count, err := table.db.CopyFrom(context.Background(), Identifier{table.name}, data); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, int64(3), count)
+	}
+}
+
 func TestCopyFrom_noSlice(t *testing.T) {
 	table, err := setup(t)
 	if err != nil {
