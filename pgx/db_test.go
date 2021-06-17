@@ -80,7 +80,7 @@ func newTestTable() *TestTable {
 	result.drop = fmt.Sprintf("DROP TABLE IF EXISTS %s", result.name)
 	result.insert = fmt.Sprintf("INSERT INTO %s (test_key, test_value) VALUES (:test_key, :test_value)", result.name)
 	result.find = fmt.Sprintf("SELECT test_key, test_value FROM %s WHERE test_key= ?", result.name)
-	result.findAll = fmt.Sprintf("SELECT test_key, test_value FROM %s", result.name)
+	result.findAll = fmt.Sprintf("SELECT aaaa.test_key, aaaa.test_value FROM %s as aaaa", result.name)
 	result.count = fmt.Sprintf("SELECT COUNT(*) FROM %s", result.name)
 
 	return &result
