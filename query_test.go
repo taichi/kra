@@ -112,6 +112,18 @@ func TestDMark(t *testing.T) {
 	}
 }
 
+func TestDMarkWithIdentifier(t *testing.T) {
+	if query, err := NewQuery("INSERT INTO f$oo (bar, baz) VALUES ($1, $2)"); err != nil {
+		t.Error(err)
+		return
+	} else if raw, _, err := query.Analyze(&TestVR{}); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, "INSERT INTO f$oo ( bar , baz ) VALUES ( $1 , $2 )", raw)
+	}
+}
+
 func TestMultipleStatemtents(t *testing.T) {
 	if _, err := NewQuery("INSERT INTO foo (bar, baz) VALUES (?, ?); SELECT * FROM foo"); err != nil {
 		assert.ErrorIs(t, err, ErrMultipleStatements)

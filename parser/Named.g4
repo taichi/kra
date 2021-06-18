@@ -51,7 +51,7 @@ namedParamter: (AT | COLON) IDENTIFIER (DOT IDENTIFIER)*;
 
 qmarkParameter: QMARK;
 
-decParameter: DOLLAR DIGIT+;
+decParameter: DECPARAM;
 
 staticParameter: STRING;
 
@@ -84,7 +84,8 @@ fragment SQUOTA_STRING: '\'' ('\\' . | '\'\'' | ~('\'' | '\\'))* '\'';
 STRING: DQUOTA_STRING | SQUOTA_STRING;
 NUMBER: ((DIGIT+ (DOT DIGIT*)?) | (DOT DIGIT+)) ([eE] [-+]? DIGIT+)? | '0x' HEX_DIGIT+;
 
-IDENTIFIER: LETTER (LETTER | UNICODE_DIGIT)*;
+IDENTIFIER: LETTER (LETTER | UNICODE_DIGIT | '$')*;
+DECPARAM: '$' DIGIT+;
 
 fragment LETTER: UNICODE_LETTER | '_';
 fragment UNICODE_LETTER: [\p{L}];
@@ -95,7 +96,6 @@ CLOSE_PAREN: ')';
 QMARK: '?';
 COMMA: ',';
 AT: '@';
-DOLLAR: '$';
 COLON: ':';
 SEMI: ';';
 DOT: '.';

@@ -264,12 +264,9 @@ func (collector *PartsCollector) VisitQmarkParameter(ctx *parser.QmarkParameterC
 }
 
 func toDMarkParameterPart(ctx *parser.DecParameterContext) StmtPartFn {
-	var buf strings.Builder
-	for _, token := range ctx.AllDIGIT() {
-		buf.WriteString(token.GetText())
-	}
+	txt := ctx.DECPARAM().GetText()
 	return func() (StmtPart, error) {
-		return NewDMarkParameterPart(buf.String())
+		return NewDMarkParameterPart(txt[1:])
 	}
 }
 
