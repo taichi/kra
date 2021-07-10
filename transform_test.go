@@ -19,6 +19,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"fmt"
+	"math/big"
 	"testing"
 	"time"
 
@@ -43,6 +44,20 @@ type fixture struct {
 	TestKey   string `db:"test_key"`
 	TestValue string `db:"test_value"`
 	Len       pgtype.Interval
+	Num       *MyNum
+}
+
+type MyNum struct {
+	Value pgtype.Numeric
+}
+
+func (num *MyNum) Scan(value interface{}) error {
+	result := pgtype.Numeric{}
+	if err := result.Scan(value); err != nil {
+		return err
+	}
+	*num = MyNum{Value: result}
+	return nil
 }
 
 func setup(t *testing.T) (*TestTable, error) {
@@ -82,11 +97,12 @@ func newTestTable() *TestTable {
 	result.create = fmt.Sprintf(`CREATE TABLE %s (
 		test_key VARCHAR,
 		test_value VARCHAR,
-		len interval hour to minute
+		len interval hour to minute,
+		num numeric
 );`, result.name)
 	result.drop = fmt.Sprintf("DROP TABLE IF EXISTS %s", result.name)
-	result.insert = fmt.Sprintf("INSERT INTO %s (test_key, test_value, len) VALUES ($1, $2, $3)", result.name)
-	result.find = fmt.Sprintf("SELECT test_key, test_value, len FROM %s WHERE test_key= $1", result.name)
+	result.insert = fmt.Sprintf("INSERT INTO %s (test_key, test_value, len, num) VALUES ($1, $2, $3, 34)", result.name)
+	result.find = fmt.Sprintf("SELECT test_key, test_value, len, num FROM %s WHERE test_key= $1", result.name)
 	result.findAll = fmt.Sprintf("SELECT test_key, test_value, len FROM %s ORDER BY test_key", result.name)
 	result.count = fmt.Sprintf("SELECT COUNT(*) FROM %s", result.name)
 
@@ -184,6 +200,7 @@ func TestDefaultTransformer_Transform_Struct(t *testing.T) {
 
 	assert.Equal(t, "1111", result.TestKey)
 	assert.Equal(t, pgtype.Interval{Microseconds: 5400000000, Status: pgtype.Present}, result.Len)
+	assert.Equal(t, &MyNum{pgtype.Numeric{Int: big.NewInt(34), Exp: 0, Status: pgtype.Present}}, result.Num)
 }
 
 func TestDefaultTransformer_Transform_Map(t *testing.T) {
