@@ -6,10 +6,8 @@ require (
 	github.com/antlr/antlr4 v0.0.0-20210707120613-a80295a60b3e
 	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210707120613-a80295a60b3e
 	github.com/jackc/pgconn v1.8.1
-	github.com/jackc/pgtype v1.7.0
+	github.com/jackc/pgtype v1.8.0
 	github.com/jackc/pgx/v4 v4.11.0
-	github.com/lib/pq v1.4.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/shopspring/decimal v0.0.0-20200419222939-1884f454f8ea // indirect
 	github.com/stretchr/testify v1.7.0
 )
