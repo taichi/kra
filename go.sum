@@ -38,6 +38,8 @@ github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210521184019-c5ad59b459ec h1:E
 github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210521184019-c5ad59b459ec/go.mod h1:F7bn7fEU90QkQ3tnmaTx3LTKLEDqnwWODIYppRQ5hnY=
 github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210707120613-a80295a60b3e h1:uBd2310XecYTPyaGpDpmqtPbH0T8ND5FY76aRZ3B/Tk=
 github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210707120613-a80295a60b3e/go.mod h1:F7bn7fEU90QkQ3tnmaTx3LTKLEDqnwWODIYppRQ5hnY=
+github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210716071054-a231a1a7f1cc h1:0LxTNJTbCStbOMoNcQEc6naaWfU7rI0b+Zdns1EI7TA=
+github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210716071054-a231a1a7f1cc/go.mod h1:F7bn7fEU90QkQ3tnmaTx3LTKLEDqnwWODIYppRQ5hnY=
 github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
