@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/antlr/antlr4 v0.0.0-20210826220005-b48c857c3a0e
-	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210803070921-b358b509191a
+	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210826220005-b48c857c3a0e
 	github.com/go-kit/kit v0.10.0 // indirect
 	github.com/jackc/pgconn v1.10.0
 	github.com/jackc/pgtype v1.8.1
