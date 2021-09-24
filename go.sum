@@ -34,6 +34,8 @@ github.com/antlr/antlr4 v0.0.0-20210907221601-4f80a5e09cd0 h1:CmA1cKc8TyWdEexBAt
 github.com/antlr/antlr4 v0.0.0-20210907221601-4f80a5e09cd0/go.mod h1:T7PbCXFs94rrTttyxjbyT5+/1V8T2TYDejxUfHJjw1Y=
 github.com/antlr/antlr4 v0.0.0-20210914074925-ce3c483ec505 h1:RZMx9GjT7WmJcl7jdsvC/OPbBDO2pXKHL4v4TLPxmZ8=
 github.com/antlr/antlr4 v0.0.0-20210914074925-ce3c483ec505/go.mod h1:T7PbCXFs94rrTttyxjbyT5+/1V8T2TYDejxUfHJjw1Y=
+github.com/antlr/antlr4 v0.0.0-20210924153228-1f7fee215962 h1:sHY8qsPnTu7vDUvjL0mEaVN620NGAQdaxH9erKaT9ok=
+github.com/antlr/antlr4 v0.0.0-20210924153228-1f7fee215962/go.mod h1:T7PbCXFs94rrTttyxjbyT5+/1V8T2TYDejxUfHJjw1Y=
 github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210506161523-0a1c3e3ce1ca h1:cZZsTEHO/8dZcxfjctHHbnEDLKdvyjUjWLNchKdgO94=
 github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210506161523-0a1c3e3ce1ca/go.mod h1:F7bn7fEU90QkQ3tnmaTx3LTKLEDqnwWODIYppRQ5hnY=
 github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210510155620-3601dcad5d17 h1:fLGaJgAYjJwsFGRMsKZ4POcylLOXlLDmUAEuOLllvyU=
