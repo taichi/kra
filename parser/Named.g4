@@ -74,7 +74,7 @@ BLOCK_COMMENT: '/*' .*? '*/' -> channel(HIDDEN);
 LINE_COMMENT: '--' .*? '\n' -> channel(HIDDEN);
 
 fragment HEX_DIGIT: [0-9a-fA-F];
-DIGIT: [0-9];
+fragment DIGIT: [0-9];
 
 IN: [iI] [nN];
 
