@@ -1,10 +1,18 @@
 {
-  "extends": ["config:base"],
-  "schedule": ["on friday"],
+  "extends": [
+    "config:base",
+    ":dependencyDashboard"
+  ],
+  "schedule": [
+    "on friday"
+  ],
   "automerge": true,
   "packageRules": [
     {
-      "excludePackageNames": ["github.com/antlr/antlr4/runtime/Go/antlr"]
+      "excludePackagePrefixes": [
+        "github.com/antlr/antlr4/runtime/Go/antlr"
+      ],
+      "groupName": "dependencies"
     }
   ]
 }
