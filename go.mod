@@ -3,7 +3,7 @@ module github.com/taichi/kra
 go 1.16
 
 require (
-	github.com/antlr/antlr4 v0.0.0-20211224231842-87cf554f0273
+	github.com/antlr/antlr4 v0.0.0-20211230233453-7135d1f0fd15
 	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20211224231842-87cf554f0273
 	github.com/go-kit/kit v0.10.0 // indirect
 	github.com/jackc/pgconn v1.10.1
