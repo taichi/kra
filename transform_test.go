@@ -102,8 +102,8 @@ func newTestTable() *TestTable {
 );`, result.name)
 	result.drop = fmt.Sprintf("DROP TABLE IF EXISTS %s", result.name)
 	result.insert = fmt.Sprintf("INSERT INTO %s (test_key, test_value, len, num) VALUES ($1, $2, $3, 34)", result.name)
-	result.find = fmt.Sprintf("SELECT test_key, test_value, len, num FROM %s WHERE test_key= $1", result.name)
-	result.findAll = fmt.Sprintf("SELECT test_key, test_value, len FROM %s ORDER BY test_key", result.name)
+	result.find = fmt.Sprintf("SELECT test_key, test_value as testValue, len, num FROM %s WHERE test_key= $1", result.name)
+	result.findAll = fmt.Sprintf("SELECT test_key, test_value as Testvalue, len FROM %s ORDER BY test_key", result.name)
 	result.count = fmt.Sprintf("SELECT COUNT(*) FROM %s", result.name)
 
 	return &result
