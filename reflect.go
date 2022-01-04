@@ -71,12 +71,12 @@ func (repo *TypeRepository) Traverse(target reflect.Type, history ...*StructDef)
 	}
 
 	length := targetType.NumField()
-	members := map[string]FieldDef{}
+	members := map[string]*FieldDef{}
 	for index := 0; index < length; index++ {
 		field := targetType.Field(index)
 		name, options := parseTag(repo.core, &field)
 		if 0 < len(field.PkgPath) { // skip unexported field
-			members[name] = FieldDef{nil, nil, true, options}
+			members[name] = &FieldDef{nil, nil, true, options}
 			continue
 		}
 
@@ -88,12 +88,12 @@ func (repo *TypeRepository) Traverse(target reflect.Type, history ...*StructDef)
 				child = found
 			}
 		}
-		members[name] = FieldDef{[]int{index}, child, false, options}
+		members[name] = &FieldDef{[]int{index}, child, false, options}
 
 		if field.Anonymous && child != nil && child.Members != nil {
 			for key, val := range child.Members {
 				if _, ok := members[key]; ok == false { // don't override by embedded members
-					members[key] = FieldDef{append([]int{index}, val.Indices...), val.Self, false, options}
+					members[key] = &FieldDef{append([]int{index}, val.Indices...), val.Self, false, options}
 				}
 			}
 		}
@@ -134,7 +134,7 @@ func parseTag(core *Core, field *reflect.StructField) (name string, options map[
 
 type StructDef struct {
 	Target  reflect.Type
-	Members map[string]FieldDef
+	Members map[string]*FieldDef
 }
 
 type FieldDef struct {
@@ -169,7 +169,7 @@ func visitByName(def *StructDef, value *reflect.Value, names []string) (*FieldDe
 		if fdef.Self != nil && 1 < len(names) {
 			return visitByName(fdef.Self, &val, names[1:])
 		}
-		return &fdef, &val, nil
+		return fdef, &val, nil
 	} else {
 		return nil, nil, fmt.Errorf("name=%s %w", cur, ErrFieldNotFound)
 	}

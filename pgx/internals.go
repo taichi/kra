@@ -143,7 +143,7 @@ func doCopyFrom(core *kra.Core, copyFrom CopyFromFn, ctx context.Context, tableN
 		for i, col := range columnNames {
 			if def, val, err := elementDef.ByName(element, col); err != nil {
 				return 0, err
-			} else if isCopyable(*def) {
+			} else if isCopyable(def) {
 				values[i] = val.Interface()
 			}
 		}
@@ -153,6 +153,6 @@ func doCopyFrom(core *kra.Core, copyFrom CopyFromFn, ctx context.Context, tableN
 	return copyFrom(ctx, pgx.Identifier(tableName), columnNames, pgx.CopyFromRows(rowSrc))
 }
 
-func isCopyable(def kra.FieldDef) bool {
+func isCopyable(def *kra.FieldDef) bool {
 	return def.Unexported == false && def.Options["name"] != "-"
 }
