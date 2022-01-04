@@ -72,11 +72,15 @@ func (repo *TypeRepository) Traverse(target reflect.Type, history ...*StructDef)
 
 	length := targetType.NumField()
 	members := map[string]*FieldDef{}
+	rawMembers := map[string]*FieldDef{}
 	for index := 0; index < length; index++ {
 		field := targetType.Field(index)
+		rawName := strings.ToLower(field.Name)
 		name, options := parseTag(repo.core, &field)
 		if 0 < len(field.PkgPath) { // skip unexported field
-			members[name] = &FieldDef{nil, nil, true, options}
+			def := &FieldDef{nil, nil, true, options}
+			members[name] = def
+			rawMembers[rawName] = def
 			continue
 		}
 
@@ -88,18 +92,25 @@ func (repo *TypeRepository) Traverse(target reflect.Type, history ...*StructDef)
 				child = found
 			}
 		}
-		members[name] = &FieldDef{[]int{index}, child, false, options}
+		def := &FieldDef{[]int{index}, child, false, options}
+		members[name] = def
+		rawMembers[rawName] = def
 
-		if field.Anonymous && child != nil && child.Members != nil {
-			for key, val := range child.Members {
-				if _, ok := members[key]; ok == false { // don't override by embedded members
-					members[key] = &FieldDef{append([]int{index}, val.Indices...), val.Self, false, options}
-				}
-			}
+		if field.Anonymous && child != nil {
+			storeKids(child.Members, members, index, options)
+			storeKids(child.RawMembers, rawMembers, index, options)
 		}
 	}
 
-	return &StructDef{target, members}, nil
+	return &StructDef{target, members, rawMembers}, nil
+}
+
+func storeKids(srcMembers map[string]*FieldDef, destMembers map[string]*FieldDef, index int, options map[string]string) {
+	for key, val := range srcMembers {
+		if _, ok := destMembers[key]; ok == false { // don't override by embedded members
+			destMembers[key] = &FieldDef{append([]int{index}, val.Indices...), val.Self, false, options}
+		}
+	}
 }
 
 func parseTag(core *Core, field *reflect.StructField) (name string, options map[string]string) {
@@ -133,8 +144,9 @@ func parseTag(core *Core, field *reflect.StructField) (name string, options map[
 }
 
 type StructDef struct {
-	Target  reflect.Type
-	Members map[string]*FieldDef
+	Target     reflect.Type
+	Members    map[string]*FieldDef
+	RawMembers map[string]*FieldDef
 }
 
 type FieldDef struct {
@@ -154,25 +166,31 @@ func (def *StructDef) ByName(root reflect.Value, name string) (*FieldDef, *refle
 
 func visitByName(def *StructDef, value *reflect.Value, names []string) (*FieldDef, *reflect.Value, error) {
 	cur := names[0]
-	if fdef, ok := def.Members[cur]; ok {
-		if fdef.Unexported {
-			return nil, nil, fmt.Errorf("name=%s %w", cur, ErrFieldUnexported)
-		}
-
-		var val reflect.Value = *value
-		for _, index := range fdef.Indices {
-			if val.Kind() == reflect.Ptr && val.IsNil() {
-				break
-			}
-			val = reflect.Indirect(val).Field(index)
-		}
-		if fdef.Self != nil && 1 < len(names) {
-			return visitByName(fdef.Self, &val, names[1:])
-		}
-		return fdef, &val, nil
+	if fDef, ok := def.Members[cur]; ok {
+		return visitFieldDef(fDef, cur, value, names)
+	} else if fDef, ok := def.RawMembers[cur]; ok {
+		return visitFieldDef(fDef, cur, value, names)
 	} else {
 		return nil, nil, fmt.Errorf("name=%s %w", cur, ErrFieldNotFound)
 	}
+}
+
+func visitFieldDef(fDef *FieldDef, cur string, value *reflect.Value, names []string) (*FieldDef, *reflect.Value, error) {
+	if fDef.Unexported {
+		return nil, nil, fmt.Errorf("name=%s %w", cur, ErrFieldUnexported)
+	}
+
+	var val reflect.Value = *value
+	for _, index := range fDef.Indices {
+		if val.Kind() == reflect.Ptr && val.IsNil() {
+			break
+		}
+		val = reflect.Indirect(val).Field(index)
+	}
+	if fDef.Self != nil && 1 < len(names) {
+		return visitByName(fDef.Self, &val, names[1:])
+	}
+	return fDef, &val, nil
 }
 
 func Indirect(t reflect.Type) reflect.Type {

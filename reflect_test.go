@@ -72,6 +72,31 @@ func TestStructDef_NamedByTag(t *testing.T) {
 	}
 }
 
+func TestStructDef_NamedByRawName(t *testing.T) {
+	type Aaaa struct {
+		Bbbb string `db:"zzz"`
+		Cccc int
+		dddd uint
+	}
+
+	aaa := Aaaa{"foo", 32, 11}
+
+	repo := NewTypeRepository(NewCore(PostgreSQL))
+
+	value := reflect.ValueOf(aaa)
+	def, err := repo.Lookup(value.Type())
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if _, value, err := def.ByName(value, "bbbb"); err != nil {
+		t.Error(err)
+	} else if assert.NotNil(t, value) {
+		assert.Equal(t, "foo", value.Interface())
+	}
+}
+
 func TestStructDef_Unexported(t *testing.T) {
 	type Aaaa struct {
 		Bbbb string
