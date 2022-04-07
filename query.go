@@ -85,7 +85,7 @@ func (state *ResolvingState) NextIndex() int {
 }
 
 func (state *ResolvingState) AppendStmt(part string) {
-	state.query.WriteRune(' ')
+	state.query.WriteByte(' ')
 	state.query.WriteString(part)
 }
 
