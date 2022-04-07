@@ -2,6 +2,7 @@
 
 ![](https://github.com/taichi/kra/actions/workflows/push.yml/badge.svg)
 [![PkgGoDev](https://pkg.go.dev/badge/https://pkg.go.dev/github.comtaichi/kra)](https://pkg.go.dev/github.com/taichi/kra)
+[![Go Report Card](https://goreportcard.com/badge/github.com/taichi/kra)](https://goreportcard.com/report/github.com/taichi/kra)
 
 **SQL is the best way to access database**.
 
