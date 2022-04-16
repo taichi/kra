@@ -1,11 +1,11 @@
-// Code generated from c:\dev\repo\go\kra\parser\Named.g4 by ANTLR 4.8. DO NOT EDIT.
+// Code generated from c:\dev\repo\go\kra\parser\Named.g4 by ANTLR 4.10.1. DO NOT EDIT.
 
 package parser // Named
 
 import (
 	"fmt"
-	"reflect"
 	"strconv"
+	"sync"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 )
@@ -26,89 +26,109 @@ import (
 
 // Suppress unused import errors
 var _ = fmt.Printf
-var _ = reflect.Copy
 var _ = strconv.Itoa
-
-var parserATN = []uint16{
-	3, 24715, 42794, 33075, 47597, 16764, 15335, 30598, 22884, 3, 20, 92, 4,
-	2, 9, 2, 4, 3, 9, 3, 4, 4, 9, 4, 4, 5, 9, 5, 4, 6, 9, 6, 4, 7, 9, 7, 4,
-	8, 9, 8, 4, 9, 9, 9, 4, 10, 9, 10, 3, 2, 3, 2, 6, 2, 23, 10, 2, 13, 2,
-	14, 2, 24, 3, 2, 7, 2, 28, 10, 2, 12, 2, 14, 2, 31, 11, 2, 3, 2, 7, 2,
-	34, 10, 2, 12, 2, 14, 2, 37, 11, 2, 3, 3, 3, 3, 3, 3, 6, 3, 42, 10, 3,
-	13, 3, 14, 3, 43, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 7, 4, 51, 10, 4, 12, 4,
-	14, 4, 54, 11, 4, 3, 4, 3, 4, 3, 5, 3, 5, 3, 5, 3, 5, 5, 5, 62, 10, 5,
-	3, 6, 3, 6, 3, 6, 3, 6, 7, 6, 68, 10, 6, 12, 6, 14, 6, 71, 11, 6, 3, 7,
-	3, 7, 3, 8, 3, 8, 3, 9, 3, 9, 3, 10, 3, 10, 3, 10, 5, 10, 82, 10, 10, 3,
-	10, 3, 10, 3, 10, 3, 10, 3, 10, 3, 10, 5, 10, 90, 10, 10, 3, 10, 2, 2,
-	11, 2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 4, 3, 2, 15, 16, 4, 2, 9, 9, 19,
-	19, 2, 100, 2, 20, 3, 2, 2, 2, 4, 41, 3, 2, 2, 2, 6, 45, 3, 2, 2, 2, 8,
-	61, 3, 2, 2, 2, 10, 63, 3, 2, 2, 2, 12, 72, 3, 2, 2, 2, 14, 74, 3, 2, 2,
-	2, 16, 76, 3, 2, 2, 2, 18, 89, 3, 2, 2, 2, 20, 29, 5, 4, 3, 2, 21, 23,
-	7, 17, 2, 2, 22, 21, 3, 2, 2, 2, 23, 24, 3, 2, 2, 2, 24, 22, 3, 2, 2, 2,
-	24, 25, 3, 2, 2, 2, 25, 26, 3, 2, 2, 2, 26, 28, 5, 4, 3, 2, 27, 22, 3,
-	2, 2, 2, 28, 31, 3, 2, 2, 2, 29, 27, 3, 2, 2, 2, 29, 30, 3, 2, 2, 2, 30,
-	35, 3, 2, 2, 2, 31, 29, 3, 2, 2, 2, 32, 34, 7, 17, 2, 2, 33, 32, 3, 2,
-	2, 2, 34, 37, 3, 2, 2, 2, 35, 33, 3, 2, 2, 2, 35, 36, 3, 2, 2, 2, 36, 3,
-	3, 2, 2, 2, 37, 35, 3, 2, 2, 2, 38, 42, 5, 6, 4, 2, 39, 42, 5, 18, 10,
-	2, 40, 42, 5, 8, 5, 2, 41, 38, 3, 2, 2, 2, 41, 39, 3, 2, 2, 2, 41, 40,
-	3, 2, 2, 2, 42, 43, 3, 2, 2, 2, 43, 41, 3, 2, 2, 2, 43, 44, 3, 2, 2, 2,
-	44, 5, 3, 2, 2, 2, 45, 46, 7, 6, 2, 2, 46, 47, 7, 11, 2, 2, 47, 52, 5,
-	8, 5, 2, 48, 49, 7, 14, 2, 2, 49, 51, 5, 8, 5, 2, 50, 48, 3, 2, 2, 2, 51,
-	54, 3, 2, 2, 2, 52, 50, 3, 2, 2, 2, 52, 53, 3, 2, 2, 2, 53, 55, 3, 2, 2,
-	2, 54, 52, 3, 2, 2, 2, 55, 56, 7, 12, 2, 2, 56, 7, 3, 2, 2, 2, 57, 62,
-	5, 10, 6, 2, 58, 62, 5, 12, 7, 2, 59, 62, 5, 14, 8, 2, 60, 62, 5, 16, 9,
-	2, 61, 57, 3, 2, 2, 2, 61, 58, 3, 2, 2, 2, 61, 59, 3, 2, 2, 2, 61, 60,
-	3, 2, 2, 2, 62, 9, 3, 2, 2, 2, 63, 64, 9, 2, 2, 2, 64, 69, 7, 9, 2, 2,
-	65, 66, 7, 18, 2, 2, 66, 68, 7, 9, 2, 2, 67, 65, 3, 2, 2, 2, 68, 71, 3,
-	2, 2, 2, 69, 67, 3, 2, 2, 2, 69, 70, 3, 2, 2, 2, 70, 11, 3, 2, 2, 2, 71,
-	69, 3, 2, 2, 2, 72, 73, 7, 13, 2, 2, 73, 13, 3, 2, 2, 2, 74, 75, 7, 10,
-	2, 2, 75, 15, 3, 2, 2, 2, 76, 77, 7, 7, 2, 2, 77, 17, 3, 2, 2, 2, 78, 81,
-	7, 9, 2, 2, 79, 80, 7, 18, 2, 2, 80, 82, 9, 3, 2, 2, 81, 79, 3, 2, 2, 2,
-	81, 82, 3, 2, 2, 2, 82, 90, 3, 2, 2, 2, 83, 90, 7, 11, 2, 2, 84, 90, 7,
-	12, 2, 2, 85, 90, 7, 14, 2, 2, 86, 90, 7, 19, 2, 2, 87, 90, 7, 20, 2, 2,
-	88, 90, 7, 8, 2, 2, 89, 78, 3, 2, 2, 2, 89, 83, 3, 2, 2, 2, 89, 84, 3,
-	2, 2, 2, 89, 85, 3, 2, 2, 2, 89, 86, 3, 2, 2, 2, 89, 87, 3, 2, 2, 2, 89,
-	88, 3, 2, 2, 2, 90, 19, 3, 2, 2, 2, 12, 24, 29, 35, 41, 43, 52, 61, 69,
-	81, 89,
-}
-var deserializer = antlr.NewATNDeserializer(nil)
-var deserializedATN = deserializer.DeserializeFromUInt16(parserATN)
-
-var literalNames = []string{
-	"", "", "", "", "", "", "", "", "", "'('", "')'", "'?'", "','", "'@'",
-	"':'", "';'", "'.'", "'*'",
-}
-var symbolicNames = []string{
-	"", "SPACES", "BLOCK_COMMENT", "LINE_COMMENT", "IN", "STRING", "NUMBER",
-	"IDENTIFIER", "DECPARAM", "OPEN_PAREN", "CLOSE_PAREN", "QMARK", "COMMA",
-	"AT", "COLON", "SEMI", "DOT", "STAR", "ANY_SYMBOL",
-}
-
-var ruleNames = []string{
-	"parse", "stmt", "inExpr", "parameter", "namedParamter", "qmarkParameter",
-	"decParameter", "staticParameter", "anyStmtParts",
-}
-var decisionToDFA = make([]*antlr.DFA, len(deserializedATN.DecisionToState))
-
-func init() {
-	for index, ds := range deserializedATN.DecisionToState {
-		decisionToDFA[index] = antlr.NewDFA(ds, index)
-	}
-}
+var _ = sync.Once{}
 
 type NamedParser struct {
 	*antlr.BaseParser
 }
 
+var namedParserStaticData struct {
+	once                   sync.Once
+	serializedATN          []int32
+	literalNames           []string
+	symbolicNames          []string
+	ruleNames              []string
+	predictionContextCache *antlr.PredictionContextCache
+	atn                    *antlr.ATN
+	decisionToDFA          []*antlr.DFA
+}
+
+func namedParserInit() {
+	staticData := &namedParserStaticData
+	staticData.literalNames = []string{
+		"", "", "", "", "", "", "", "", "", "'('", "')'", "'?'", "','", "'@'",
+		"':'", "';'", "'.'", "'*'",
+	}
+	staticData.symbolicNames = []string{
+		"", "SPACES", "BLOCK_COMMENT", "LINE_COMMENT", "IN", "STRING", "NUMBER",
+		"IDENTIFIER", "DECPARAM", "OPEN_PAREN", "CLOSE_PAREN", "QMARK", "COMMA",
+		"AT", "COLON", "SEMI", "DOT", "STAR", "ANY_SYMBOL",
+	}
+	staticData.ruleNames = []string{
+		"parse", "stmt", "inExpr", "parameter", "namedParamter", "qmarkParameter",
+		"decParameter", "staticParameter", "anyStmtParts",
+	}
+	staticData.predictionContextCache = antlr.NewPredictionContextCache()
+	staticData.serializedATN = []int32{
+		4, 1, 18, 90, 2, 0, 7, 0, 2, 1, 7, 1, 2, 2, 7, 2, 2, 3, 7, 3, 2, 4, 7,
+		4, 2, 5, 7, 5, 2, 6, 7, 6, 2, 7, 7, 7, 2, 8, 7, 8, 1, 0, 1, 0, 4, 0, 21,
+		8, 0, 11, 0, 12, 0, 22, 1, 0, 5, 0, 26, 8, 0, 10, 0, 12, 0, 29, 9, 0, 1,
+		0, 5, 0, 32, 8, 0, 10, 0, 12, 0, 35, 9, 0, 1, 1, 1, 1, 1, 1, 4, 1, 40,
+		8, 1, 11, 1, 12, 1, 41, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 5, 2, 49, 8, 2, 10,
+		2, 12, 2, 52, 9, 2, 1, 2, 1, 2, 1, 3, 1, 3, 1, 3, 1, 3, 3, 3, 60, 8, 3,
+		1, 4, 1, 4, 1, 4, 1, 4, 5, 4, 66, 8, 4, 10, 4, 12, 4, 69, 9, 4, 1, 5, 1,
+		5, 1, 6, 1, 6, 1, 7, 1, 7, 1, 8, 1, 8, 1, 8, 3, 8, 80, 8, 8, 1, 8, 1, 8,
+		1, 8, 1, 8, 1, 8, 1, 8, 3, 8, 88, 8, 8, 1, 8, 0, 0, 9, 0, 2, 4, 6, 8, 10,
+		12, 14, 16, 0, 2, 1, 0, 13, 14, 2, 0, 7, 7, 17, 17, 98, 0, 18, 1, 0, 0,
+		0, 2, 39, 1, 0, 0, 0, 4, 43, 1, 0, 0, 0, 6, 59, 1, 0, 0, 0, 8, 61, 1, 0,
+		0, 0, 10, 70, 1, 0, 0, 0, 12, 72, 1, 0, 0, 0, 14, 74, 1, 0, 0, 0, 16, 87,
+		1, 0, 0, 0, 18, 27, 3, 2, 1, 0, 19, 21, 5, 15, 0, 0, 20, 19, 1, 0, 0, 0,
+		21, 22, 1, 0, 0, 0, 22, 20, 1, 0, 0, 0, 22, 23, 1, 0, 0, 0, 23, 24, 1,
+		0, 0, 0, 24, 26, 3, 2, 1, 0, 25, 20, 1, 0, 0, 0, 26, 29, 1, 0, 0, 0, 27,
+		25, 1, 0, 0, 0, 27, 28, 1, 0, 0, 0, 28, 33, 1, 0, 0, 0, 29, 27, 1, 0, 0,
+		0, 30, 32, 5, 15, 0, 0, 31, 30, 1, 0, 0, 0, 32, 35, 1, 0, 0, 0, 33, 31,
+		1, 0, 0, 0, 33, 34, 1, 0, 0, 0, 34, 1, 1, 0, 0, 0, 35, 33, 1, 0, 0, 0,
+		36, 40, 3, 4, 2, 0, 37, 40, 3, 16, 8, 0, 38, 40, 3, 6, 3, 0, 39, 36, 1,
+		0, 0, 0, 39, 37, 1, 0, 0, 0, 39, 38, 1, 0, 0, 0, 40, 41, 1, 0, 0, 0, 41,
+		39, 1, 0, 0, 0, 41, 42, 1, 0, 0, 0, 42, 3, 1, 0, 0, 0, 43, 44, 5, 4, 0,
+		0, 44, 45, 5, 9, 0, 0, 45, 50, 3, 6, 3, 0, 46, 47, 5, 12, 0, 0, 47, 49,
+		3, 6, 3, 0, 48, 46, 1, 0, 0, 0, 49, 52, 1, 0, 0, 0, 50, 48, 1, 0, 0, 0,
+		50, 51, 1, 0, 0, 0, 51, 53, 1, 0, 0, 0, 52, 50, 1, 0, 0, 0, 53, 54, 5,
+		10, 0, 0, 54, 5, 1, 0, 0, 0, 55, 60, 3, 8, 4, 0, 56, 60, 3, 10, 5, 0, 57,
+		60, 3, 12, 6, 0, 58, 60, 3, 14, 7, 0, 59, 55, 1, 0, 0, 0, 59, 56, 1, 0,
+		0, 0, 59, 57, 1, 0, 0, 0, 59, 58, 1, 0, 0, 0, 60, 7, 1, 0, 0, 0, 61, 62,
+		7, 0, 0, 0, 62, 67, 5, 7, 0, 0, 63, 64, 5, 16, 0, 0, 64, 66, 5, 7, 0, 0,
+		65, 63, 1, 0, 0, 0, 66, 69, 1, 0, 0, 0, 67, 65, 1, 0, 0, 0, 67, 68, 1,
+		0, 0, 0, 68, 9, 1, 0, 0, 0, 69, 67, 1, 0, 0, 0, 70, 71, 5, 11, 0, 0, 71,
+		11, 1, 0, 0, 0, 72, 73, 5, 8, 0, 0, 73, 13, 1, 0, 0, 0, 74, 75, 5, 5, 0,
+		0, 75, 15, 1, 0, 0, 0, 76, 79, 5, 7, 0, 0, 77, 78, 5, 16, 0, 0, 78, 80,
+		7, 1, 0, 0, 79, 77, 1, 0, 0, 0, 79, 80, 1, 0, 0, 0, 80, 88, 1, 0, 0, 0,
+		81, 88, 5, 9, 0, 0, 82, 88, 5, 10, 0, 0, 83, 88, 5, 12, 0, 0, 84, 88, 5,
+		17, 0, 0, 85, 88, 5, 18, 0, 0, 86, 88, 5, 6, 0, 0, 87, 76, 1, 0, 0, 0,
+		87, 81, 1, 0, 0, 0, 87, 82, 1, 0, 0, 0, 87, 83, 1, 0, 0, 0, 87, 84, 1,
+		0, 0, 0, 87, 85, 1, 0, 0, 0, 87, 86, 1, 0, 0, 0, 88, 17, 1, 0, 0, 0, 10,
+		22, 27, 33, 39, 41, 50, 59, 67, 79, 87,
+	}
+	deserializer := antlr.NewATNDeserializer(nil)
+	staticData.atn = deserializer.Deserialize(staticData.serializedATN)
+	atn := staticData.atn
+	staticData.decisionToDFA = make([]*antlr.DFA, len(atn.DecisionToState))
+	decisionToDFA := staticData.decisionToDFA
+	for index, state := range atn.DecisionToState {
+		decisionToDFA[index] = antlr.NewDFA(state, index)
+	}
+}
+
+// NamedParserInit initializes any static state used to implement NamedParser. By default the
+// static state used to implement the parser is lazily initialized during the first call to
+// NewNamedParser(). You can call this function if you wish to initialize the static state ahead
+// of time.
+func NamedParserInit() {
+	staticData := &namedParserStaticData
+	staticData.once.Do(namedParserInit)
+}
+
+// NewNamedParser produces a new parser instance for the optional input antlr.TokenStream.
 func NewNamedParser(input antlr.TokenStream) *NamedParser {
+	NamedParserInit()
 	this := new(NamedParser)
-
 	this.BaseParser = antlr.NewBaseParser(input)
-
-	this.Interpreter = antlr.NewParserATNSimulator(this, deserializedATN, decisionToDFA, antlr.NewPredictionContextCache())
-	this.RuleNames = ruleNames
-	this.LiteralNames = literalNames
-	this.SymbolicNames = symbolicNames
+	staticData := &namedParserStaticData
+	this.Interpreter = antlr.NewParserATNSimulator(this, staticData.atn, staticData.decisionToDFA, staticData.predictionContextCache)
+	this.RuleNames = staticData.ruleNames
+	this.LiteralNames = staticData.literalNames
+	this.SymbolicNames = staticData.symbolicNames
 	this.GrammarFileName = "Named.g4"
 
 	return this
@@ -189,12 +209,20 @@ func NewParseContext(parser antlr.Parser, parent antlr.ParserRuleContext, invoki
 func (s *ParseContext) GetParser() antlr.Parser { return s.parser }
 
 func (s *ParseContext) AllStmt() []IStmtContext {
-	var ts = s.GetTypedRuleContexts(reflect.TypeOf((*IStmtContext)(nil)).Elem())
-	var tst = make([]IStmtContext, len(ts))
+	children := s.GetChildren()
+	len := 0
+	for _, ctx := range children {
+		if _, ok := ctx.(IStmtContext); ok {
+			len++
+		}
+	}
 
-	for i, t := range ts {
-		if t != nil {
+	tst := make([]IStmtContext, len)
+	i := 0
+	for _, ctx := range children {
+		if t, ok := ctx.(IStmtContext); ok {
 			tst[i] = t.(IStmtContext)
+			i++
 		}
 	}
 
@@ -202,7 +230,17 @@ func (s *ParseContext) AllStmt() []IStmtContext {
 }
 
 func (s *ParseContext) Stmt(i int) IStmtContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IStmtContext)(nil)).Elem(), i)
+	var t antlr.RuleContext
+	j := 0
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IStmtContext); ok {
+			if j == i {
+				t = ctx.(antlr.RuleContext)
+				break
+			}
+			j++
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -238,6 +276,9 @@ func (s *ParseContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 }
 
 func (p *NamedParser) Parse() (localctx IParseContext) {
+	this := p
+	_ = this
+
 	localctx = NewParseContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 0, NamedParserRULE_parse)
 	var _la int
@@ -352,12 +393,20 @@ func NewStmtContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokin
 func (s *StmtContext) GetParser() antlr.Parser { return s.parser }
 
 func (s *StmtContext) AllInExpr() []IInExprContext {
-	var ts = s.GetTypedRuleContexts(reflect.TypeOf((*IInExprContext)(nil)).Elem())
-	var tst = make([]IInExprContext, len(ts))
+	children := s.GetChildren()
+	len := 0
+	for _, ctx := range children {
+		if _, ok := ctx.(IInExprContext); ok {
+			len++
+		}
+	}
 
-	for i, t := range ts {
-		if t != nil {
+	tst := make([]IInExprContext, len)
+	i := 0
+	for _, ctx := range children {
+		if t, ok := ctx.(IInExprContext); ok {
 			tst[i] = t.(IInExprContext)
+			i++
 		}
 	}
 
@@ -365,7 +414,17 @@ func (s *StmtContext) AllInExpr() []IInExprContext {
 }
 
 func (s *StmtContext) InExpr(i int) IInExprContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IInExprContext)(nil)).Elem(), i)
+	var t antlr.RuleContext
+	j := 0
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IInExprContext); ok {
+			if j == i {
+				t = ctx.(antlr.RuleContext)
+				break
+			}
+			j++
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -375,12 +434,20 @@ func (s *StmtContext) InExpr(i int) IInExprContext {
 }
 
 func (s *StmtContext) AllAnyStmtParts() []IAnyStmtPartsContext {
-	var ts = s.GetTypedRuleContexts(reflect.TypeOf((*IAnyStmtPartsContext)(nil)).Elem())
-	var tst = make([]IAnyStmtPartsContext, len(ts))
+	children := s.GetChildren()
+	len := 0
+	for _, ctx := range children {
+		if _, ok := ctx.(IAnyStmtPartsContext); ok {
+			len++
+		}
+	}
 
-	for i, t := range ts {
-		if t != nil {
+	tst := make([]IAnyStmtPartsContext, len)
+	i := 0
+	for _, ctx := range children {
+		if t, ok := ctx.(IAnyStmtPartsContext); ok {
 			tst[i] = t.(IAnyStmtPartsContext)
+			i++
 		}
 	}
 
@@ -388,7 +455,17 @@ func (s *StmtContext) AllAnyStmtParts() []IAnyStmtPartsContext {
 }
 
 func (s *StmtContext) AnyStmtParts(i int) IAnyStmtPartsContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IAnyStmtPartsContext)(nil)).Elem(), i)
+	var t antlr.RuleContext
+	j := 0
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IAnyStmtPartsContext); ok {
+			if j == i {
+				t = ctx.(antlr.RuleContext)
+				break
+			}
+			j++
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -398,12 +475,20 @@ func (s *StmtContext) AnyStmtParts(i int) IAnyStmtPartsContext {
 }
 
 func (s *StmtContext) AllParameter() []IParameterContext {
-	var ts = s.GetTypedRuleContexts(reflect.TypeOf((*IParameterContext)(nil)).Elem())
-	var tst = make([]IParameterContext, len(ts))
+	children := s.GetChildren()
+	len := 0
+	for _, ctx := range children {
+		if _, ok := ctx.(IParameterContext); ok {
+			len++
+		}
+	}
 
-	for i, t := range ts {
-		if t != nil {
+	tst := make([]IParameterContext, len)
+	i := 0
+	for _, ctx := range children {
+		if t, ok := ctx.(IParameterContext); ok {
 			tst[i] = t.(IParameterContext)
+			i++
 		}
 	}
 
@@ -411,7 +496,17 @@ func (s *StmtContext) AllParameter() []IParameterContext {
 }
 
 func (s *StmtContext) Parameter(i int) IParameterContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IParameterContext)(nil)).Elem(), i)
+	var t antlr.RuleContext
+	j := 0
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IParameterContext); ok {
+			if j == i {
+				t = ctx.(antlr.RuleContext)
+				break
+			}
+			j++
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -439,6 +534,9 @@ func (s *StmtContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 }
 
 func (p *NamedParser) Stmt() (localctx IStmtContext) {
+	this := p
+	_ = this
+
 	localctx = NewStmtContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 2, NamedParserRULE_stmt)
 	var _la int
@@ -546,12 +644,20 @@ func (s *InExprContext) OPEN_PAREN() antlr.TerminalNode {
 }
 
 func (s *InExprContext) AllParameter() []IParameterContext {
-	var ts = s.GetTypedRuleContexts(reflect.TypeOf((*IParameterContext)(nil)).Elem())
-	var tst = make([]IParameterContext, len(ts))
+	children := s.GetChildren()
+	len := 0
+	for _, ctx := range children {
+		if _, ok := ctx.(IParameterContext); ok {
+			len++
+		}
+	}
 
-	for i, t := range ts {
-		if t != nil {
+	tst := make([]IParameterContext, len)
+	i := 0
+	for _, ctx := range children {
+		if t, ok := ctx.(IParameterContext); ok {
 			tst[i] = t.(IParameterContext)
+			i++
 		}
 	}
 
@@ -559,7 +665,17 @@ func (s *InExprContext) AllParameter() []IParameterContext {
 }
 
 func (s *InExprContext) Parameter(i int) IParameterContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IParameterContext)(nil)).Elem(), i)
+	var t antlr.RuleContext
+	j := 0
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IParameterContext); ok {
+			if j == i {
+				t = ctx.(antlr.RuleContext)
+				break
+			}
+			j++
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -599,6 +715,9 @@ func (s *InExprContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 }
 
 func (p *NamedParser) InExpr() (localctx IInExprContext) {
+	this := p
+	_ = this
+
 	localctx = NewInExprContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 4, NamedParserRULE_inExpr)
 	var _la int
@@ -697,7 +816,13 @@ func NewParameterContext(parser antlr.Parser, parent antlr.ParserRuleContext, in
 func (s *ParameterContext) GetParser() antlr.Parser { return s.parser }
 
 func (s *ParameterContext) NamedParamter() INamedParamterContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*INamedParamterContext)(nil)).Elem(), 0)
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(INamedParamterContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -707,7 +832,13 @@ func (s *ParameterContext) NamedParamter() INamedParamterContext {
 }
 
 func (s *ParameterContext) QmarkParameter() IQmarkParameterContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IQmarkParameterContext)(nil)).Elem(), 0)
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IQmarkParameterContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -717,7 +848,13 @@ func (s *ParameterContext) QmarkParameter() IQmarkParameterContext {
 }
 
 func (s *ParameterContext) DecParameter() IDecParameterContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IDecParameterContext)(nil)).Elem(), 0)
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IDecParameterContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -727,7 +864,13 @@ func (s *ParameterContext) DecParameter() IDecParameterContext {
 }
 
 func (s *ParameterContext) StaticParameter() IStaticParameterContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IStaticParameterContext)(nil)).Elem(), 0)
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IStaticParameterContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -755,6 +898,9 @@ func (s *ParameterContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 }
 
 func (p *NamedParser) Parameter() (localctx IParameterContext) {
+	this := p
+	_ = this
+
 	localctx = NewParameterContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 6, NamedParserRULE_parameter)
 
@@ -894,6 +1040,9 @@ func (s *NamedParamterContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 }
 
 func (p *NamedParser) NamedParamter() (localctx INamedParamterContext) {
+	this := p
+	_ = this
+
 	localctx = NewNamedParamterContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 8, NamedParserRULE_namedParamter)
 	var _la int
@@ -1013,6 +1162,9 @@ func (s *QmarkParameterContext) Accept(visitor antlr.ParseTreeVisitor) interface
 }
 
 func (p *NamedParser) QmarkParameter() (localctx IQmarkParameterContext) {
+	this := p
+	_ = this
+
 	localctx = NewQmarkParameterContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 10, NamedParserRULE_qmarkParameter)
 
@@ -1102,6 +1254,9 @@ func (s *DecParameterContext) Accept(visitor antlr.ParseTreeVisitor) interface{}
 }
 
 func (p *NamedParser) DecParameter() (localctx IDecParameterContext) {
+	this := p
+	_ = this
+
 	localctx = NewDecParameterContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 12, NamedParserRULE_decParameter)
 
@@ -1191,6 +1346,9 @@ func (s *StaticParameterContext) Accept(visitor antlr.ParseTreeVisitor) interfac
 }
 
 func (p *NamedParser) StaticParameter() (localctx IStaticParameterContext) {
+	this := p
+	_ = this
+
 	localctx = NewStaticParameterContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 14, NamedParserRULE_staticParameter)
 
@@ -1312,6 +1470,9 @@ func (s *AnyStmtPartsContext) Accept(visitor antlr.ParseTreeVisitor) interface{}
 }
 
 func (p *NamedParser) AnyStmtParts() (localctx IAnyStmtPartsContext) {
+	this := p
+	_ = this
+
 	localctx = NewAnyStmtPartsContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 16, NamedParserRULE_anyStmtParts)
 	var _la int
