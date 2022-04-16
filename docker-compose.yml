@@ -13,6 +13,7 @@ services:
       - 5432:5432
     volumes:
       - postgres:/var/lib/postgresql/data
+      - ./example/compare:/docker-entrypoint-initdb.d
 
 volumes:
   postgres:
