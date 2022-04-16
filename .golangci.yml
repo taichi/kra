@@ -100,7 +100,8 @@ run:
   timeout: 5m
   skip-files:
     - ".*\\.generated\\.go$" # ツールによる生成物は検査の対象にしない
-    - example/**/*.go # サンプルコードは検査の対象にしない
+  skip-dirs:
+    - example/ # サンプルコードは検査の対象にしない
   build-tags:
     - test
 
