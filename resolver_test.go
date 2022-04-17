@@ -22,12 +22,17 @@ import (
 )
 
 func TestNewDefaultResolver_Map(t *testing.T) {
-	core := NewCore(MySQL)
-	target, err := NewDefaultResolver(core, map[string]interface{}{
+	params := map[string]interface{}{
 		"foo": "111",
 		"bar": "222",
 		"baz": "333",
-	})
+	}
+	assertDefaultResolver(t, params)
+	assertDefaultResolver(t, &params)
+}
+
+func assertDefaultResolver(t *testing.T, params interface{}) {
+	target, err := NewDefaultResolver(NewCore(MySQL), params)
 
 	if err != nil {
 		t.Error(err)
