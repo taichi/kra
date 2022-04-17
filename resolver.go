@@ -36,6 +36,8 @@ func NewDefaultResolver(core *Core, args ...interface{}) (ValueResolver, error) 
 
 	for _, arg := range args {
 		switch val := arg.(type) {
+		case *map[string]interface{}:
+			values = append(values, toMapFn(*val))
 		case map[string]interface{}:
 			values = append(values, toMapFn(val))
 		case NamedArg:
