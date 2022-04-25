@@ -21,9 +21,9 @@ import (
 	"github.com/taichi/kra"
 )
 
-type ExecFn func(context.Context, string, ...interface{}) (sql.Result, error)
+type execFn func(context.Context, string, ...interface{}) (sql.Result, error)
 
-func doExec(core *kra.Core, exec ExecFn, ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func doExec(core *kra.Core, exec execFn, ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	if rawQuery, bindArgs, err := core.Analyze(query, args...); err != nil {
 		return nil, err
 	} else {
@@ -31,9 +31,9 @@ func doExec(core *kra.Core, exec ExecFn, ctx context.Context, query string, args
 	}
 }
 
-type PrepareFn func(context.Context, string) (*sql.Stmt, error)
+type prepareFn func(context.Context, string) (*sql.Stmt, error)
 
-func doPrepare(core *kra.Core, prepare PrepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
+func doPrepare(core *kra.Core, prepare prepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
 	if query, err := core.Parse(query); err != nil {
 		return nil, err
 	} else if resolver, err := core.NewResolver(examples...); err != nil {
@@ -49,9 +49,9 @@ func doPrepare(core *kra.Core, prepare PrepareFn, ctx context.Context, query str
 	}
 }
 
-type QueryFn func(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
+type queryFn func(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
 
-func doQuery(core *kra.Core, query QueryFn, ctx context.Context, queryString string, args ...interface{}) (*Rows, error) {
+func doQuery(core *kra.Core, query queryFn, ctx context.Context, queryString string, args ...interface{}) (*Rows, error) {
 	if rawQuery, bindArgs, err := core.Analyze(queryString, args...); err != nil {
 		return nil, err
 	} else if rows, err := query(ctx, rawQuery, bindArgs...); err != nil {
@@ -63,7 +63,7 @@ func doQuery(core *kra.Core, query QueryFn, ctx context.Context, queryString str
 	}
 }
 
-func doFind(core *kra.Core, query QueryFn, ctx context.Context, dest interface{}, queryString string, args ...interface{}) error {
+func doFind(core *kra.Core, query queryFn, ctx context.Context, dest interface{}, queryString string, args ...interface{}) error {
 	if rows, err := doQuery(core, query, ctx, queryString, args...); err != nil {
 		return err
 	} else {
@@ -77,7 +77,7 @@ func doFind(core *kra.Core, query QueryFn, ctx context.Context, dest interface{}
 	return nil
 }
 
-func doFindAll(core *kra.Core, query QueryFn, ctx context.Context, dest interface{}, queryString string, args ...interface{}) error {
+func doFindAll(core *kra.Core, query queryFn, ctx context.Context, dest interface{}, queryString string, args ...interface{}) error {
 	if rows, err := doQuery(core, query, ctx, queryString, args...); err != nil {
 		return err
 	} else {

@@ -27,9 +27,9 @@ import (
 	"github.com/taichi/kra"
 )
 
-type ExecFn func(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
+type execFn func(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
 
-func doExec(core *kra.Core, exec ExecFn, ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
+func doExec(core *kra.Core, exec execFn, ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
 	if rawQuery, bindArgs, err := core.Analyze(query, args...); err != nil {
 		return nil, err
 	} else {
@@ -37,9 +37,9 @@ func doExec(core *kra.Core, exec ExecFn, ctx context.Context, query string, args
 	}
 }
 
-type PrepareFn func(ctx context.Context, name, query string) (sd *pgconn.StatementDescription, err error)
+type prepareFn func(ctx context.Context, name, query string) (sd *pgconn.StatementDescription, err error)
 
-func doPrepare(core *kra.Core, conn *pgx.Conn, count *int64, prepare PrepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
+func doPrepare(core *kra.Core, conn *pgx.Conn, count *int64, prepare prepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
 	atomic.AddInt64(count, 1)
 	if query, err := core.Parse(query); err != nil {
 		return nil, err
@@ -60,9 +60,9 @@ func toName(count int64) string {
 	return fmt.Sprintf("kra-%d", count)
 }
 
-type QueryFn func(ctx context.Context, query string, args ...interface{}) (pgx.Rows, error)
+type queryFn func(ctx context.Context, query string, args ...interface{}) (pgx.Rows, error)
 
-func doQuery(core *kra.Core, query QueryFn, ctx context.Context, queryString string, args ...interface{}) (*Rows, error) {
+func doQuery(core *kra.Core, query queryFn, ctx context.Context, queryString string, args ...interface{}) (*Rows, error) {
 	if rawQuery, bindArgs, err := core.Analyze(queryString, args...); err != nil {
 		return nil, err
 	} else if rows, err := query(ctx, rawQuery, bindArgs...); err != nil {
@@ -74,7 +74,7 @@ func doQuery(core *kra.Core, query QueryFn, ctx context.Context, queryString str
 	}
 }
 
-func doFind(core *kra.Core, query QueryFn, ctx context.Context, dst interface{}, queryString string, args ...interface{}) error {
+func doFind(core *kra.Core, query queryFn, ctx context.Context, dst interface{}, queryString string, args ...interface{}) error {
 	if rows, err := doQuery(core, query, ctx, queryString, args...); err != nil {
 		return err
 	} else {
@@ -88,7 +88,7 @@ func doFind(core *kra.Core, query QueryFn, ctx context.Context, dst interface{},
 	return nil
 }
 
-func doFindAll(core *kra.Core, query QueryFn, ctx context.Context, dst interface{}, queryString string, args ...interface{}) error {
+func doFindAll(core *kra.Core, query queryFn, ctx context.Context, dst interface{}, queryString string, args ...interface{}) error {
 	if rows, err := doQuery(core, query, ctx, queryString, args...); err != nil {
 		return err
 	} else {
@@ -100,11 +100,11 @@ func doFindAll(core *kra.Core, query QueryFn, ctx context.Context, dst interface
 	return nil
 }
 
-type CopyFromFn func(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error)
+type copyFromFn func(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error)
 
 var ErrEmptySlice = errors.New("kra: empty slice")
 
-func doCopyFrom(core *kra.Core, copyFrom CopyFromFn, ctx context.Context, tableName Identifier, src interface{}) (int64, error) {
+func doCopyFrom(core *kra.Core, copyFrom copyFromFn, ctx context.Context, tableName Identifier, src interface{}) (int64, error) {
 	directValue := reflect.Indirect(reflect.ValueOf(src))
 
 	if directValue.Kind() != reflect.Slice {
