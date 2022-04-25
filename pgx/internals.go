@@ -104,7 +104,13 @@ type copyFromFn func(ctx context.Context, tableName pgx.Identifier, columnNames 
 
 var ErrEmptySlice = errors.New("kra: empty slice")
 
+var ErrCopyFromSource = errors.New("kra: cannot use pgx.CopyFromSource as src, use the underlying object")
+
 func doCopyFrom(core *kra.Core, copyFrom copyFromFn, ctx context.Context, tableName Identifier, src interface{}) (int64, error) {
+	if _, ok := src.(pgx.CopyFromSource); ok {
+		return 0, ErrCopyFromSource
+	}
+
 	directValue := reflect.Indirect(reflect.ValueOf(src))
 
 	if directValue.Kind() != reflect.Slice {
