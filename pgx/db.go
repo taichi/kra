@@ -331,27 +331,31 @@ func (stmt *Stmt) Close(ctx context.Context) error {
 }
 
 func (stmt *Stmt) Exec(ctx context.Context, args ...interface{}) (pgconn.CommandTag, error) {
-	if resolver, err := stmt.core.NewResolver(args...); err != nil {
-		return nil, err
-	} else if _, bindArgs, err := stmt.query.Analyze(resolver); err != nil {
-		return nil, err
-	} else {
-		return stmt.conn.Exec(ctx, stmt.stmt.Name, bindArgs...)
-	}
+	return stmt.core.hook.Stmt.Exec(func(c context.Context, a ...interface{}) (pgconn.CommandTag, error) {
+		if resolver, err := stmt.core.NewResolver(a...); err != nil {
+			return nil, err
+		} else if _, bindArgs, err := stmt.query.Analyze(resolver); err != nil {
+			return nil, err
+		} else {
+			return stmt.conn.Exec(c, stmt.stmt.Name, bindArgs...)
+		}
+	}, ctx, args...)
 }
 
 func (stmt *Stmt) Query(ctx context.Context, args ...interface{}) (*Rows, error) {
-	if resolver, err := stmt.core.NewResolver(args...); err != nil {
-		return nil, err
-	} else if _, bindArgs, err := stmt.query.Analyze(resolver); err != nil {
-		return nil, err
-	} else if rows, err := stmt.conn.Query(ctx, stmt.stmt.Name, bindArgs...); err != nil {
-		return nil, err
-	} else if rows.Err() != nil {
-		return nil, rows.Err()
-	} else {
-		return NewRows(stmt.core, rows), nil
-	}
+	return stmt.core.hook.Stmt.Query(func(c context.Context, a ...interface{}) (*Rows, error) {
+		if resolver, err := stmt.core.NewResolver(args...); err != nil {
+			return nil, err
+		} else if _, bindArgs, err := stmt.query.Analyze(resolver); err != nil {
+			return nil, err
+		} else if rows, err := stmt.conn.Query(ctx, stmt.stmt.Name, bindArgs...); err != nil {
+			return nil, err
+		} else if rows.Err() != nil {
+			return nil, rows.Err()
+		} else {
+			return NewRows(stmt.core, rows), nil
+		}
+	}, ctx, args)
 }
 
 type PooledStmt struct {

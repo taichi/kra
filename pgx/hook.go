@@ -41,7 +41,8 @@ type Hook struct {
 	Find        func(original func(ctx context.Context, dest interface{}, query string, args ...interface{}) error, ctx context.Context, dest interface{}, query string, args ...interface{}) error
 	FindAll     func(original func(ctx context.Context, dest interface{}, query string, args ...interface{}) error, ctx context.Context, dest interface{}, query string, args ...interface{}) error
 
-	Tx *TxHook
+	Tx   *TxHook
+	Stmt *StmtHook
 }
 
 type TxHook struct {
@@ -50,6 +51,11 @@ type TxHook struct {
 
 	Begin     func(original func(ctx context.Context) (*Tx, error), ctx context.Context) (*Tx, error)
 	BeginFunc func(original func(ctx context.Context, f func(*Tx) error) error, ctx context.Context, f func(*Tx) error) error
+}
+
+type StmtHook struct {
+	Exec  func(original func(ctx context.Context, args ...interface{}) (pgconn.CommandTag, error), ctx context.Context, args ...interface{}) (pgconn.CommandTag, error)
+	Query func(original func(ctx context.Context, args ...interface{}) (*Rows, error), ctx context.Context, args ...interface{}) (*Rows, error)
 }
 
 func NewHook(hook *Hook) *Hook {
@@ -107,12 +113,23 @@ func NewHook(hook *Hook) *Hook {
 				return original(ctx, f)
 			},
 		},
+		Stmt: &StmtHook{
+			Exec: func(original func(ctx context.Context, args ...interface{}) (pgconn.CommandTag, error), ctx context.Context, args ...interface{}) (pgconn.CommandTag, error) {
+				return original(ctx, args...)
+			},
+			Query: func(original func(ctx context.Context, args ...interface{}) (*Rows, error), ctx context.Context, args ...interface{}) (*Rows, error) {
+				return original(ctx, args...)
+			},
+		},
 	}
 
 	if hook != nil {
 		baseHook.Merge(hook)
 		if hook.Tx != nil {
 			baseHook.Tx.Merge(hook.Tx)
+		}
+		if hook.Stmt != nil {
+			baseHook.Stmt.Merge(hook.Stmt)
 		}
 	}
 
@@ -173,5 +190,14 @@ func (baseHook *TxHook) Merge(hook *TxHook) {
 	}
 	if hook.BeginFunc != nil {
 		baseHook.BeginFunc = hook.BeginFunc
+	}
+}
+
+func (basehook *StmtHook) Merge(hook *StmtHook) {
+	if hook.Exec != nil {
+		basehook.Exec = hook.Exec
+	}
+	if hook.Query != nil {
+		basehook.Query = hook.Query
 	}
 }
