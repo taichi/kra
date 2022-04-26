@@ -170,15 +170,19 @@ func (db *DB) Begin(ctx context.Context) (*Tx, error) {
 }
 
 func (db *DB) BeginTx(ctx context.Context, opts pgx.TxOptions) (*Tx, error) {
-	if tx, err := db.pool.BeginTx(ctx, opts); err != nil {
-		return nil, err
-	} else {
-		return &Tx{tx, tx.Conn(), db.core, &db.count}, nil
-	}
+	return db.core.hook.BeginTx(func(c context.Context, o pgx.TxOptions) (*Tx, error) {
+		if tx, err := db.pool.BeginTx(c, o); err != nil {
+			return nil, err
+		} else {
+			return &Tx{tx, tx.Conn(), db.core, &db.count}, nil
+		}
+	}, ctx, opts)
 }
 
 func (db *DB) Ping(ctx context.Context) error {
-	return db.pool.Ping(ctx)
+	return db.core.hook.Ping(func(c context.Context) error {
+		return db.pool.Ping(c)
+	}, ctx)
 }
 
 func (db *DB) Exec(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
@@ -190,8 +194,10 @@ func (db *DB) CopyFrom(ctx context.Context, tableName Identifier, rowSrc interfa
 }
 
 func (db *DB) SendBatch(ctx context.Context, batch *Batch) *BatchResults {
-	results := db.pool.SendBatch(ctx, batch.batch)
-	return &BatchResults{results, db.core}
+	return db.core.hook.SendBatch(func(c context.Context, b *Batch) *BatchResults {
+		results := db.pool.SendBatch(ctx, batch.batch)
+		return &BatchResults{results, db.core}
+	}, ctx, batch)
 }
 
 func (db *DB) Prepare(ctx context.Context, query string, examples ...interface{}) (*PooledStmt, error) {
@@ -210,15 +216,21 @@ func (db *DB) Prepare(ctx context.Context, query string, examples ...interface{}
 }
 
 func (db *DB) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
-	return doQuery(db.core, db.pool.Query, ctx, query, args...)
+	return db.core.hook.Query(func(c context.Context, q string, a ...interface{}) (*Rows, error) {
+		return doQuery(db.core, db.pool.Query, c, q, a...)
+	}, ctx, query, args...)
 }
 
 func (db *DB) Find(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return doFind(db.core, db.pool.Query, ctx, dest, query, args...)
+	return db.core.hook.Find(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+		return doFind(db.core, db.pool.Query, c, d, q, a...)
+	}, ctx, dest, query, args...)
 }
 
 func (db *DB) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return doFindAll(db.core, db.pool.Query, ctx, dest, query, args...)
+	return db.core.hook.FindAll(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+		return doFindAll(db.core, db.pool.Query, c, d, q, a...)
+	}, ctx, dest, query, args...)
 }
 
 type Tx struct {
