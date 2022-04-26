@@ -40,11 +40,16 @@ type Hook struct {
 	SendBatch   func(original func(ctx context.Context, batch *Batch) *BatchResults, ctx context.Context, batch *Batch) *BatchResults
 	Find        func(original func(ctx context.Context, dest interface{}, query string, args ...interface{}) error, ctx context.Context, dest interface{}, query string, args ...interface{}) error
 	FindAll     func(original func(ctx context.Context, dest interface{}, query string, args ...interface{}) error, ctx context.Context, dest interface{}, query string, args ...interface{}) error
-	Commit      func(original func(ctx context.Context) error, ctx context.Context) error
-	Rollback    func(original func(ctx context.Context) error, ctx context.Context) error
 
-	NestedBegin     func(original func(ctx context.Context) (*Tx, error), ctx context.Context) (*Tx, error)
-	NestedBeginFunc func(original func(ctx context.Context, f func(*Tx) error) error, ctx context.Context, f func(*Tx) error) error
+	Tx *TxHook
+}
+
+type TxHook struct {
+	Commit   func(original func(ctx context.Context) error, ctx context.Context) error
+	Rollback func(original func(ctx context.Context) error, ctx context.Context) error
+
+	Begin     func(original func(ctx context.Context) (*Tx, error), ctx context.Context) (*Tx, error)
+	BeginFunc func(original func(ctx context.Context, f func(*Tx) error) error, ctx context.Context, f func(*Tx) error) error
 }
 
 func NewHook(hook *Hook) *Hook {
@@ -88,23 +93,29 @@ func NewHook(hook *Hook) *Hook {
 		FindAll: func(original func(ctx context.Context, dest interface{}, query string, args ...interface{}) error, ctx context.Context, dest interface{}, query string, args ...interface{}) error {
 			return original(ctx, dest, query, args...)
 		},
-		Commit: func(original func(ctx context.Context) error, ctx context.Context) error {
-			return original(ctx)
-		},
-		Rollback: func(original func(ctx context.Context) error, ctx context.Context) error {
-			return original(ctx)
-		},
-		NestedBegin: func(original func(ctx context.Context) (*Tx, error), ctx context.Context) (*Tx, error) {
-			return original(ctx)
-		},
-		NestedBeginFunc: func(original func(ctx context.Context, f func(*Tx) error) error, ctx context.Context, f func(*Tx) error) error {
-			return original(ctx, f)
+		Tx: &TxHook{
+			Commit: func(original func(ctx context.Context) error, ctx context.Context) error {
+				return original(ctx)
+			},
+			Rollback: func(original func(ctx context.Context) error, ctx context.Context) error {
+				return original(ctx)
+			},
+			Begin: func(original func(ctx context.Context) (*Tx, error), ctx context.Context) (*Tx, error) {
+				return original(ctx)
+			},
+			BeginFunc: func(original func(ctx context.Context, f func(*Tx) error) error, ctx context.Context, f func(*Tx) error) error {
+				return original(ctx, f)
+			},
 		},
 	}
 
 	if hook != nil {
 		baseHook.Merge(hook)
+		if hook.Tx != nil {
+			baseHook.Tx.Merge(hook.Tx)
+		}
 	}
+
 	return baseHook
 }
 
@@ -148,16 +159,19 @@ func (baseHook *Hook) Merge(hook *Hook) {
 	if hook.FindAll != nil {
 		baseHook.FindAll = hook.FindAll
 	}
+}
+
+func (baseHook *TxHook) Merge(hook *TxHook) {
 	if hook.Commit != nil {
 		baseHook.Commit = hook.Commit
 	}
 	if hook.Rollback != nil {
 		baseHook.Rollback = hook.Rollback
 	}
-	if hook.NestedBegin != nil {
-		baseHook.NestedBegin = hook.NestedBegin
+	if hook.Begin != nil {
+		baseHook.Begin = hook.Begin
 	}
-	if hook.NestedBeginFunc != nil {
-		baseHook.NestedBeginFunc = hook.NestedBeginFunc
+	if hook.BeginFunc != nil {
+		baseHook.BeginFunc = hook.BeginFunc
 	}
 }

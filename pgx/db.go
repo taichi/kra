@@ -245,25 +245,33 @@ func (tx *Tx) Tx() pgx.Tx {
 }
 
 func (tx *Tx) Begin(ctx context.Context) (*Tx, error) {
-	if newone, err := tx.tx.Begin(ctx); err != nil {
-		return nil, err
-	} else {
-		return &Tx{newone, tx.conn, tx.core, tx.count}, nil
-	}
+	return tx.core.hook.Tx.Begin(func(c context.Context) (*Tx, error) {
+		if newone, err := tx.tx.Begin(c); err != nil {
+			return nil, err
+		} else {
+			return &Tx{newone, tx.conn, tx.core, tx.count}, nil
+		}
+	}, ctx)
 }
 
-func (tx *Tx) BeginFunc(ctx context.Context, f func(*Tx) error) error {
-	return tx.tx.BeginFunc(ctx, func(newone pgx.Tx) error {
-		return f(&Tx{newone, tx.conn, tx.core, tx.count})
-	})
+func (tx *Tx) BeginFunc(ctx context.Context, fn func(*Tx) error) error {
+	return tx.core.hook.Tx.BeginFunc(func(c context.Context, f func(*Tx) error) error {
+		return tx.tx.BeginFunc(ctx, func(newone pgx.Tx) error {
+			return f(&Tx{newone, tx.conn, tx.core, tx.count})
+		})
+	}, ctx, fn)
 }
 
 func (tx *Tx) Commit(ctx context.Context) error {
-	return tx.tx.Commit(ctx)
+	return tx.core.hook.Tx.Commit(func(c context.Context) error {
+		return tx.tx.Commit(c)
+	}, ctx)
 }
 
 func (tx *Tx) Rollback(ctx context.Context) error {
-	return tx.tx.Rollback(ctx)
+	return tx.core.hook.Tx.Rollback(func(c context.Context) error {
+		return tx.tx.Rollback(c)
+	}, ctx)
 }
 
 func (tx *Tx) CopyFrom(ctx context.Context, tableName Identifier, rowSrc interface{}) (int64, error) {
@@ -271,8 +279,10 @@ func (tx *Tx) CopyFrom(ctx context.Context, tableName Identifier, rowSrc interfa
 }
 
 func (tx *Tx) SendBatch(ctx context.Context, batch *Batch) *BatchResults {
-	results := tx.tx.SendBatch(ctx, batch.batch)
-	return &BatchResults{results, tx.core}
+	return tx.core.hook.SendBatch(func(c context.Context, b *Batch) *BatchResults {
+		results := tx.tx.SendBatch(ctx, b.batch)
+		return &BatchResults{results, tx.core}
+	}, ctx, batch)
 }
 
 func (tx *Tx) Prepare(ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
@@ -284,15 +294,21 @@ func (tx *Tx) Exec(ctx context.Context, query string, args ...interface{}) (pgco
 }
 
 func (tx *Tx) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
-	return doQuery(tx.core, tx.tx.Query, ctx, query, args...)
+	return tx.core.hook.Query(func(c context.Context, q string, a ...interface{}) (*Rows, error) {
+		return doQuery(tx.core, tx.tx.Query, c, q, a...)
+	}, ctx, query, args...)
 }
 
 func (tx *Tx) Find(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return doFind(tx.core, tx.tx.Query, ctx, dest, query, args...)
+	return tx.core.hook.Find(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+		return doFind(tx.core, tx.tx.Query, c, d, q, a...)
+	}, ctx, dest, query, args...)
 }
 
 func (tx *Tx) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return doFindAll(tx.core, tx.tx.Query, ctx, dest, query, args...)
+	return tx.core.hook.FindAll(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+		return doFindAll(tx.core, tx.tx.Query, c, d, q, a...)
+	}, ctx, dest, query, args...)
 }
 
 type Stmt struct {

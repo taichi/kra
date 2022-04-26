@@ -593,6 +593,57 @@ func TestCopyFrom_NoStruct(t *testing.T) {
 	}
 }
 
+func TestTx(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	data := []fixture{
+		{"111", "aa"},
+		{"222", "bbbb"},
+		{"333", "ccc"},
+	}
+
+	if tx, err := table.db.Begin(context.Background()); err != nil {
+		t.Error(err)
+	} else if count, err := tx.CopyFrom(context.Background(), Identifier{table.name}, data); err != nil {
+		t.Error(err)
+	} else if err := tx.Commit(context.Background()); err != nil {
+		t.Error(err)
+	} else {
+		assert.Equal(t, int64(3), count)
+	}
+}
+
+func TestTx_Rollback(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	data := []fixture{
+		{"111", "aa"},
+		{"222", "bbbb"},
+		{"333", "ccc"},
+	}
+	var count int
+	ctx := context.Background()
+	if tx, err := table.db.Begin(ctx); err != nil {
+		t.Error(err)
+	} else if _, err := tx.CopyFrom(ctx, Identifier{table.name}, data); err != nil {
+		t.Error(err)
+	} else if err := tx.Rollback(ctx); err != nil {
+		t.Error(err)
+	} else if err := table.db.Find(ctx, &count, table.count); err != nil {
+		t.Error(err)
+	} else {
+		assert.Equal(t, 0, count)
+	}
+}
+
 func TestStatementDuplicate_Different_Conn(t *testing.T) {
 	table, err := setup(t)
 	if err != nil {
