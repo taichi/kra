@@ -41,8 +41,11 @@ type Hook struct {
 	Find        func(original func(ctx context.Context, dest interface{}, query string, args ...interface{}) error, ctx context.Context, dest interface{}, query string, args ...interface{}) error
 	FindAll     func(original func(ctx context.Context, dest interface{}, query string, args ...interface{}) error, ctx context.Context, dest interface{}, query string, args ...interface{}) error
 
-	Tx   *TxHook
-	Stmt *StmtHook
+	Tx           *TxHook
+	Stmt         *StmtHook
+	Rows         *RowsHook
+	Batch        *BatchHook
+	BatchResults *BatchResultsHook
 }
 
 type TxHook struct {
@@ -56,6 +59,21 @@ type TxHook struct {
 type StmtHook struct {
 	Exec  func(original func(ctx context.Context, args ...interface{}) (pgconn.CommandTag, error), ctx context.Context, args ...interface{}) (pgconn.CommandTag, error)
 	Query func(original func(ctx context.Context, args ...interface{}) (*Rows, error), ctx context.Context, args ...interface{}) (*Rows, error)
+}
+
+type RowsHook struct {
+	Next func(original func() bool) bool
+	Err  func(original func() error) error
+	Scan func(original func(dest interface{}) error, dest interface{}) error
+}
+
+type BatchHook struct {
+	Queue func(original func(query string, args ...interface{}) error, query string, args ...interface{}) error
+}
+
+type BatchResultsHook struct {
+	Exec  func(original func() (pgconn.CommandTag, error)) (pgconn.CommandTag, error)
+	Query func(original func() (*Rows, error)) (*Rows, error)
 }
 
 func NewHook(hook *Hook) *Hook {
@@ -99,28 +117,11 @@ func NewHook(hook *Hook) *Hook {
 		FindAll: func(original func(ctx context.Context, dest interface{}, query string, args ...interface{}) error, ctx context.Context, dest interface{}, query string, args ...interface{}) error {
 			return original(ctx, dest, query, args...)
 		},
-		Tx: &TxHook{
-			Commit: func(original func(ctx context.Context) error, ctx context.Context) error {
-				return original(ctx)
-			},
-			Rollback: func(original func(ctx context.Context) error, ctx context.Context) error {
-				return original(ctx)
-			},
-			Begin: func(original func(ctx context.Context) (*Tx, error), ctx context.Context) (*Tx, error) {
-				return original(ctx)
-			},
-			BeginFunc: func(original func(ctx context.Context, f func(*Tx) error) error, ctx context.Context, f func(*Tx) error) error {
-				return original(ctx, f)
-			},
-		},
-		Stmt: &StmtHook{
-			Exec: func(original func(ctx context.Context, args ...interface{}) (pgconn.CommandTag, error), ctx context.Context, args ...interface{}) (pgconn.CommandTag, error) {
-				return original(ctx, args...)
-			},
-			Query: func(original func(ctx context.Context, args ...interface{}) (*Rows, error), ctx context.Context, args ...interface{}) (*Rows, error) {
-				return original(ctx, args...)
-			},
-		},
+		Tx:           NewTxHook(),
+		Stmt:         NewStmtHook(),
+		Rows:         NewRowsHook(),
+		Batch:        NewBatchHook(),
+		BatchResults: NewBatchResultsHook(),
 	}
 
 	if hook != nil {
@@ -130,6 +131,15 @@ func NewHook(hook *Hook) *Hook {
 		}
 		if hook.Stmt != nil {
 			baseHook.Stmt.Merge(hook.Stmt)
+		}
+		if hook.Rows != nil {
+			baseHook.Rows.Merge(hook.Rows)
+		}
+		if hook.Batch != nil {
+			baseHook.Batch.Merge(hook.Batch)
+		}
+		if hook.BatchResults != nil {
+			baseHook.BatchResults.Merge(hook.BatchResults)
 		}
 	}
 
@@ -178,6 +188,23 @@ func (baseHook *Hook) Merge(hook *Hook) {
 	}
 }
 
+func NewTxHook() *TxHook {
+	return &TxHook{
+		Commit: func(original func(ctx context.Context) error, ctx context.Context) error {
+			return original(ctx)
+		},
+		Rollback: func(original func(ctx context.Context) error, ctx context.Context) error {
+			return original(ctx)
+		},
+		Begin: func(original func(ctx context.Context) (*Tx, error), ctx context.Context) (*Tx, error) {
+			return original(ctx)
+		},
+		BeginFunc: func(original func(ctx context.Context, f func(*Tx) error) error, ctx context.Context, f func(*Tx) error) error {
+			return original(ctx, f)
+		},
+	}
+}
+
 func (baseHook *TxHook) Merge(hook *TxHook) {
 	if hook.Commit != nil {
 		baseHook.Commit = hook.Commit
@@ -193,7 +220,78 @@ func (baseHook *TxHook) Merge(hook *TxHook) {
 	}
 }
 
+func NewStmtHook() *StmtHook {
+	return &StmtHook{
+		Exec: func(original func(ctx context.Context, args ...interface{}) (pgconn.CommandTag, error), ctx context.Context, args ...interface{}) (pgconn.CommandTag, error) {
+			return original(ctx, args...)
+		},
+		Query: func(original func(ctx context.Context, args ...interface{}) (*Rows, error), ctx context.Context, args ...interface{}) (*Rows, error) {
+			return original(ctx, args...)
+		},
+	}
+}
+
 func (basehook *StmtHook) Merge(hook *StmtHook) {
+	if hook.Exec != nil {
+		basehook.Exec = hook.Exec
+	}
+	if hook.Query != nil {
+		basehook.Query = hook.Query
+	}
+}
+
+func NewRowsHook() *RowsHook {
+	return &RowsHook{
+		Next: func(original func() bool) bool {
+			return original()
+		},
+		Err: func(original func() error) error {
+			return original()
+		},
+		Scan: func(original func(dest interface{}) error, dest interface{}) error {
+			return original(dest)
+		},
+	}
+}
+
+func (basehook *RowsHook) Merge(hook *RowsHook) {
+	if hook.Next != nil {
+		basehook.Next = hook.Next
+	}
+	if hook.Err != nil {
+		basehook.Err = hook.Err
+	}
+	if hook.Scan != nil {
+		basehook.Scan = hook.Scan
+	}
+}
+
+func NewBatchHook() *BatchHook {
+	return &BatchHook{
+		Queue: func(original func(query string, args ...interface{}) error, query string, args ...interface{}) error {
+			return original(query, args...)
+		},
+	}
+}
+
+func (basehook *BatchHook) Merge(hook *BatchHook) {
+	if hook.Queue != nil {
+		basehook.Queue = hook.Queue
+	}
+}
+
+func NewBatchResultsHook() *BatchResultsHook {
+	return &BatchResultsHook{
+		Exec: func(original func() (pgconn.CommandTag, error)) (pgconn.CommandTag, error) {
+			return original()
+		},
+		Query: func(original func() (*Rows, error)) (*Rows, error) {
+			return original()
+		},
+	}
+}
+
+func (basehook *BatchResultsHook) Merge(hook *BatchResultsHook) {
 	if hook.Exec != nil {
 		basehook.Exec = hook.Exec
 	}

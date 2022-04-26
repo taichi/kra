@@ -382,19 +382,20 @@ func (stmt *PooledStmt) Query(ctx context.Context, args ...interface{}) (*Rows, 
 
 type Rows struct {
 	rows        *rowsAdapter
+	core        *Core
 	transformer kra.Transformer
 }
 
 func NewRows(core *Core, rows pgx.Rows) *Rows {
-	return &Rows{&rowsAdapter{rows}, core.hook.NewTransformer(core.NewTransformer)}
+	return &Rows{&rowsAdapter{rows}, core, core.hook.NewTransformer(core.NewTransformer)}
 }
 
 func (rows *Rows) Next() bool {
-	return rows.rows.Next()
+	return rows.core.hook.Rows.Next(rows.rows.Next)
 }
 
 func (rows *Rows) Err() error {
-	return rows.rows.Err()
+	return rows.core.hook.Rows.Err(rows.rows.Err)
 }
 
 func (rows *Rows) Rows() pgx.Rows {
@@ -407,7 +408,9 @@ func (rows *Rows) Close() error {
 }
 
 func (rows *Rows) Scan(dest interface{}) error {
-	return rows.transformer.Transform(rows.rows, dest)
+	return rows.core.hook.Rows.Scan(func(d interface{}) error {
+		return rows.transformer.Transform(rows.rows, d)
+	}, dest)
 }
 
 type rowsAdapter struct {
@@ -437,12 +440,14 @@ func (batch *Batch) Batch() *pgx.Batch {
 }
 
 func (batch *Batch) Queue(query string, args ...interface{}) error {
-	if rawQuery, bindArgs, err := batch.core.Analyze(query, args...); err != nil {
-		return err
-	} else {
-		batch.batch.Queue(rawQuery, bindArgs...)
-		return nil
-	}
+	return batch.core.hook.Batch.Queue(func(q string, a ...interface{}) error {
+		if rawQuery, bindArgs, err := batch.core.Analyze(q, a...); err != nil {
+			return err
+		} else {
+			batch.batch.Queue(rawQuery, bindArgs...)
+			return nil
+		}
+	}, query, args...)
 }
 
 type BatchResults struct {
@@ -459,13 +464,15 @@ func (batchResults *BatchResults) Close() error {
 }
 
 func (batchResults *BatchResults) Exec() (pgconn.CommandTag, error) {
-	return batchResults.batchResults.Exec()
+	return batchResults.core.hook.BatchResults.Exec(batchResults.batchResults.Exec)
 }
 
 func (batchResults *BatchResults) Query() (*Rows, error) {
-	if rows, err := batchResults.batchResults.Query(); err != nil {
-		return nil, err
-	} else {
-		return NewRows(batchResults.core, rows), nil
-	}
+	return batchResults.core.hook.BatchResults.Query(func() (*Rows, error) {
+		if rows, err := batchResults.batchResults.Query(); err != nil {
+			return nil, err
+		} else {
+			return NewRows(batchResults.core, rows), nil
+		}
+	})
 }
