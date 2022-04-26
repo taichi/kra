@@ -30,34 +30,42 @@ func Open(ctx context.Context, connString string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	return OpenConfig(ctx, config)
+	return OpenConfig(ctx, config, nil)
 }
 
 type Identifier pgx.Identifier
 
-func OpenConfig(ctx context.Context, config *pgxpool.Config) (*DB, error) {
+func OpenConfig(ctx context.Context, config *pgxpool.Config, hook *Hook) (*DB, error) {
 	if pool, err := pgxpool.ConnectConfig(ctx, config); err != nil {
 		return nil, err
 	} else {
-		return NewDB(pool, kra.NewCore(kra.PostgreSQL)), nil
+		return NewDB(pool, NewCore(kra.PostgreSQL, hook)), nil
 	}
 }
 
 type Conn struct {
 	conn  *pgx.Conn
-	core  *kra.Core
+	core  *Core
 	count int64
 }
 
 func Connect(ctx context.Context, connString string) (*Conn, error) {
-	if conn, err := pgx.Connect(ctx, connString); err != nil {
+	if config, err := pgx.ParseConfig(connString); err != nil {
 		return nil, err
 	} else {
-		return NewConn(conn, kra.NewCore(kra.PostgreSQL)), nil
+		return ConnectConfig(ctx, config, nil)
 	}
 }
 
-func NewConn(conn *pgx.Conn, core *kra.Core) *Conn {
+func ConnectConfig(ctx context.Context, connConfig *pgx.ConnConfig, hook *Hook) (*Conn, error) {
+	if conn, err := pgx.ConnectConfig(ctx, connConfig); err != nil {
+		return nil, err
+	} else {
+		return NewConn(conn, NewCore(kra.PostgreSQL, hook)), nil
+	}
+}
+
+func NewConn(conn *pgx.Conn, core *Core) *Conn {
 	return &Conn{conn, core, 0}
 }
 
@@ -70,31 +78,29 @@ func (conn *Conn) Close(ctx context.Context) error {
 }
 
 func (conn *Conn) Begin(ctx context.Context) (*Tx, error) {
-	if tx, err := conn.conn.Begin(ctx); err != nil {
-		return nil, err
-	} else {
-		return &Tx{tx, conn.conn, conn.core, &conn.count}, nil
-	}
+	return conn.BeginTx(ctx, pgx.TxOptions{})
 }
 
 func (conn *Conn) BeginFunc(ctx context.Context, f func(*Tx) error) error {
-	return conn.conn.BeginFunc(ctx, func(tx pgx.Tx) error {
-		return f(&Tx{tx, conn.conn, conn.core, &conn.count})
-	})
+	return conn.BeginTxFunc(ctx, pgx.TxOptions{}, f)
 }
 
 func (conn *Conn) BeginTx(ctx context.Context, txOptions pgx.TxOptions) (*Tx, error) {
-	if tx, err := conn.conn.BeginTx(ctx, txOptions); err != nil {
-		return nil, err
-	} else {
-		return &Tx{tx, conn.conn, conn.core, &conn.count}, nil
-	}
+	return conn.core.hook.BeginTx(func(c context.Context, o pgx.TxOptions) (*Tx, error) {
+		if tx, err := conn.conn.BeginTx(c, o); err != nil {
+			return nil, err
+		} else {
+			return &Tx{tx, conn.conn, conn.core, &conn.count}, nil
+		}
+	}, ctx, txOptions)
 }
 
-func (conn *Conn) BeginTxFunc(ctx context.Context, txOptions pgx.TxOptions, f func(*Tx) error) error {
-	return conn.conn.BeginTxFunc(ctx, txOptions, func(tx pgx.Tx) error {
-		return f(&Tx{tx, conn.conn, conn.core, &conn.count})
-	})
+func (conn *Conn) BeginTxFunc(ctx context.Context, txOptions pgx.TxOptions, fn func(*Tx) error) error {
+	return conn.core.hook.BeginTxFunc(func(c context.Context, o pgx.TxOptions, f func(*Tx) error) error {
+		return conn.conn.BeginTxFunc(c, o, func(tx pgx.Tx) error {
+			return f(&Tx{tx, conn.conn, conn.core, &conn.count})
+		})
+	}, ctx, txOptions, fn)
 }
 
 func (conn *Conn) CopyFrom(ctx context.Context, tableName Identifier, rowSrc interface{}) (int64, error) {
@@ -106,7 +112,9 @@ func (conn *Conn) Exec(ctx context.Context, query string, args ...interface{}) (
 }
 
 func (conn *Conn) Ping(ctx context.Context) error {
-	return conn.conn.Ping(ctx)
+	return conn.core.hook.Ping(func(c context.Context) error {
+		return conn.conn.Ping(c)
+	}, ctx)
 }
 
 func (conn *Conn) Prepare(ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
@@ -114,29 +122,37 @@ func (conn *Conn) Prepare(ctx context.Context, query string, examples ...interfa
 }
 
 func (conn *Conn) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
-	return doQuery(conn.core, conn.conn.Query, ctx, query, args...)
+	return conn.core.hook.Query(func(c context.Context, q string, a ...interface{}) (*Rows, error) {
+		return doQuery(conn.core, conn.conn.Query, c, q, a...)
+	}, ctx, query, args...)
 }
 
 func (conn *Conn) SendBatch(ctx context.Context, batch *Batch) *BatchResults {
-	results := conn.conn.SendBatch(ctx, batch.batch)
-	return &BatchResults{results, conn.core}
+	return conn.core.hook.SendBatch(func(c context.Context, b *Batch) *BatchResults {
+		results := conn.conn.SendBatch(c, b.batch)
+		return &BatchResults{results, conn.core}
+	}, ctx, batch)
 }
 
 func (conn *Conn) Find(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return doFind(conn.core, conn.conn.Query, ctx, dest, query, args...)
+	return conn.core.hook.Find(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+		return doFind(conn.core, conn.conn.Query, c, d, q, a...)
+	}, ctx, dest, query, args...)
 }
 
 func (conn *Conn) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return doFindAll(conn.core, conn.conn.Query, ctx, dest, query, args...)
+	return conn.core.hook.FindAll(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+		return doFindAll(conn.core, conn.conn.Query, c, d, q, a...)
+	}, ctx, dest, query, args...)
 }
 
 type DB struct {
 	pool  *pgxpool.Pool
-	core  *kra.Core
+	core  *Core
 	count int64
 }
 
-func NewDB(db *pgxpool.Pool, core *kra.Core) *DB {
+func NewDB(db *pgxpool.Pool, core *Core) *DB {
 	return &DB{db, core, 0}
 }
 
@@ -208,7 +224,7 @@ func (db *DB) FindAll(ctx context.Context, dest interface{}, query string, args 
 type Tx struct {
 	tx    pgx.Tx
 	conn  *pgx.Conn
-	core  *kra.Core
+	core  *Core
 	count *int64
 }
 
@@ -270,7 +286,7 @@ func (tx *Tx) FindAll(ctx context.Context, dest interface{}, query string, args 
 type Stmt struct {
 	stmt  *pgconn.StatementDescription
 	conn  *pgx.Conn
-	core  *kra.Core
+	core  *Core
 	query kra.QueryAnalyzer
 }
 
@@ -337,8 +353,8 @@ type Rows struct {
 	transformer kra.Transformer
 }
 
-func NewRows(core *kra.Core, rows pgx.Rows) *Rows {
-	return &Rows{&rowsAdapter{rows}, core.NewTransformer()}
+func NewRows(core *Core, rows pgx.Rows) *Rows {
+	return &Rows{&rowsAdapter{rows}, core.hook.NewTransformer(core.NewTransformer)}
 }
 
 func (rows *Rows) Next() bool {
@@ -381,7 +397,7 @@ func (adapeter *rowsAdapter) Close() error {
 
 type Batch struct {
 	batch *pgx.Batch
-	core  *kra.Core
+	core  *Core
 }
 
 func (batch *Batch) Batch() *pgx.Batch {
@@ -399,7 +415,7 @@ func (batch *Batch) Queue(query string, args ...interface{}) error {
 
 type BatchResults struct {
 	batchResults pgx.BatchResults
-	core         *kra.Core
+	core         *Core
 }
 
 func (batchResults *BatchResults) BatchResults() pgx.BatchResults {

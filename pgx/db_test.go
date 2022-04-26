@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgconn"
+	pgx "github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/taichi/kra"
@@ -45,7 +47,6 @@ type fixture struct {
 const connURL = "user=test password=test host=localhost port=5432 database=test sslmode=disable"
 
 func setup(t *testing.T) (*TestTable, error) {
-
 	table := newTestTable()
 
 	rawDb, err := Open(context.Background(), connURL)
@@ -116,7 +117,6 @@ func insertData(t *testing.T, table *TestTable) error {
 }
 
 func TestExec(t *testing.T) {
-
 	table, err := setup(t)
 	if err != nil {
 		t.Error(err)
@@ -128,6 +128,41 @@ func TestExec(t *testing.T) {
 		return
 	} else {
 		assert.Equal(t, int64(1), res.RowsAffected())
+	}
+}
+
+func TestExecConn(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	ctx := context.Background()
+	config, err := pgx.ParseConfig(connURL)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	called := false
+	conn, err := ConnectConfig(ctx, config, &Hook{
+		Exec: func(original func(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error), ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
+			called = true
+			return original(ctx, query, args...)
+		},
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer conn.Close(ctx)
+
+	if res, err := conn.Exec(ctx, table.insert, &fixture{"111", "bbbb"}); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, int64(1), res.RowsAffected())
+		assert.True(t, called)
 	}
 }
 
@@ -164,6 +199,62 @@ func TestFind(t *testing.T) {
 	assert.Equal(t, 3, count)
 }
 
+func TestFindConn(t *testing.T) {
+	if table, err := setup(t); err != nil {
+		t.Error(err)
+		return
+	} else {
+		if err := insertData(t, table); err != nil {
+			t.Error(err)
+			return
+		}
+		config, err := pgx.ParseConfig(connURL)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		calledParse := false
+		calledRes := false
+		calledTra := false
+		called := false
+		ctx := context.Background()
+		conn, err := ConnectConfig(ctx, config, &Hook{
+			Parse: func(original func(query string) (kra.QueryAnalyzer, error), query string) (kra.QueryAnalyzer, error) {
+				calledParse = true
+				return original(query)
+			},
+			NewResolver: func(original func(args ...interface{}) (kra.ValueResolver, error), args ...interface{}) (kra.ValueResolver, error) {
+				calledRes = true
+				return original(args...)
+			},
+			NewTransformer: func(original func() kra.Transformer) kra.Transformer {
+				calledTra = true
+				return original()
+			},
+			Find: func(original func(ctx context.Context, dst interface{}, query string, args ...interface{}) error, ctx context.Context, dst interface{}, query string, args ...interface{}) error {
+				called = true
+				return original(ctx, dst, query, args...)
+			},
+		})
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer conn.Close(ctx)
+
+		var dst fixture
+		if err := conn.Find(ctx, &dst, table.find, "222"); err != nil {
+			t.Error(err)
+			return
+		}
+		assert.Equal(t, "bbbb", dst.TestValue)
+		assert.True(t, calledParse)
+		assert.True(t, calledRes)
+		assert.True(t, calledTra)
+		assert.True(t, called)
+	}
+}
+
 func TestFindAll(t *testing.T) {
 	table, err := setup(t)
 	if err != nil {
@@ -183,6 +274,47 @@ func TestFindAll(t *testing.T) {
 
 	assert.Equal(t, 3, len(dstAry))
 	assert.Equal(t, "111", dstAry[0].TestKey)
+}
+
+func TestFindAllConn(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	} else {
+		if err := insertData(t, table); err != nil {
+			t.Error(err)
+			return
+		}
+		config, err := pgx.ParseConfig(connURL)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		called := false
+		ctx := context.Background()
+		conn, err := ConnectConfig(ctx, config, &Hook{
+			FindAll: func(original func(ctx context.Context, dst interface{}, query string, args ...interface{}) error, ctx context.Context, dst interface{}, query string, args ...interface{}) error {
+				called = true
+				return original(ctx, dst, query, args...)
+			},
+		})
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer conn.Close(ctx)
+
+		var dstAry []*fixture
+		if err := conn.FindAll(ctx, &dstAry, table.findAll); err != nil {
+			t.Error(err)
+			return
+		}
+
+		assert.Equal(t, 3, len(dstAry))
+		assert.Equal(t, "111", dstAry[0].TestKey)
+		assert.True(t, called)
+	}
 }
 
 func TestFindAllMap(t *testing.T) {
@@ -228,6 +360,56 @@ func TestPrepare_Exec(t *testing.T) {
 		return
 	} else {
 		assert.Equal(t, int64(1), res.RowsAffected())
+	}
+}
+
+func TestQueryConn(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = insertData(t, table)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	config, err := pgx.ParseConfig(connURL)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	called := false
+
+	ctx := context.Background()
+	conn, err := ConnectConfig(ctx, config, &Hook{
+		Query: func(original func(ctx context.Context, query string, args ...interface{}) (*Rows, error), ctx context.Context, query string, args ...interface{}) (*Rows, error) {
+			called = true
+			return original(ctx, query, args...)
+		},
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer conn.Close(ctx)
+
+	if rows, err := conn.Query(ctx, table.find, "111"); err != nil {
+		t.Error(err)
+		return
+	} else if rows.rows.Next() == false {
+		t.Fail()
+	} else {
+		var data fixture
+		sErr := rows.Scan(&data)
+		if sErr != nil {
+			t.Error(sErr)
+			return
+		}
+		assert.Equal(t, "aa", data.TestValue)
+		assert.True(t, called)
 	}
 }
 
@@ -288,6 +470,57 @@ func TestCopyFrom(t *testing.T) {
 		return
 	} else {
 		assert.Equal(t, int64(3), count)
+	}
+}
+
+func TestCopyFromConn(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	data := []fixture{
+		{"111", "aa"},
+		{"222", "bbbb"},
+		{"333", "ccc"},
+	}
+	config, err := pgx.ParseConfig(connURL)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	calledPing := false
+	calledCP := false
+	ctx := context.Background()
+	conn, err := ConnectConfig(ctx, config, &Hook{
+		Ping: func(original func(ctx context.Context) error, ctx context.Context) error {
+			calledPing = true
+			return original(ctx)
+		},
+		CopyFrom: func(original func(ctx context.Context, tableName Identifier, rowSrc interface{}) (int64, error), ctx context.Context, tableName Identifier, rowSrc interface{}) (int64, error) {
+			calledCP = true
+			return original(ctx, tableName, data)
+		},
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer conn.Close(ctx)
+
+	if err := conn.Ping(ctx); err != nil {
+		t.Error(err)
+		return
+	}
+
+	if count, err := conn.CopyFrom(ctx, Identifier{table.name}, data); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, int64(3), count)
+		assert.True(t, calledPing)
+		assert.True(t, calledCP)
 	}
 }
 
