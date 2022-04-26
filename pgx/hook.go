@@ -40,10 +40,15 @@ type Hook struct {
 	SendBatch   func(original func(ctx context.Context, batch *Batch) *BatchResults, ctx context.Context, batch *Batch) *BatchResults
 	Find        func(original func(ctx context.Context, dest interface{}, query string, args ...interface{}) error, ctx context.Context, dest interface{}, query string, args ...interface{}) error
 	FindAll     func(original func(ctx context.Context, dest interface{}, query string, args ...interface{}) error, ctx context.Context, dest interface{}, query string, args ...interface{}) error
+	Commit      func(original func(ctx context.Context) error, ctx context.Context) error
+	Rollback    func(original func(ctx context.Context) error, ctx context.Context) error
+
+	NestedBegin     func(original func(ctx context.Context) (*Tx, error), ctx context.Context) (*Tx, error)
+	NestedBeginFunc func(original func(ctx context.Context, f func(*Tx) error) error, ctx context.Context, f func(*Tx) error) error
 }
 
-func NewHook() *Hook {
-	return &Hook{
+func NewHook(hook *Hook) *Hook {
+	baseHook := &Hook{
 		Parse: func(original func(query string) (kra.QueryAnalyzer, error), query string) (kra.QueryAnalyzer, error) {
 			return original(query)
 		},
@@ -83,5 +88,76 @@ func NewHook() *Hook {
 		FindAll: func(original func(ctx context.Context, dest interface{}, query string, args ...interface{}) error, ctx context.Context, dest interface{}, query string, args ...interface{}) error {
 			return original(ctx, dest, query, args...)
 		},
+		Commit: func(original func(ctx context.Context) error, ctx context.Context) error {
+			return original(ctx)
+		},
+		Rollback: func(original func(ctx context.Context) error, ctx context.Context) error {
+			return original(ctx)
+		},
+		NestedBegin: func(original func(ctx context.Context) (*Tx, error), ctx context.Context) (*Tx, error) {
+			return original(ctx)
+		},
+		NestedBeginFunc: func(original func(ctx context.Context, f func(*Tx) error) error, ctx context.Context, f func(*Tx) error) error {
+			return original(ctx, f)
+		},
+	}
+
+	if hook != nil {
+		baseHook.Merge(hook)
+	}
+	return baseHook
+}
+
+func (baseHook *Hook) Merge(hook *Hook) {
+	if hook.Parse != nil {
+		baseHook.Parse = hook.Parse
+	}
+	if hook.NewResolver != nil {
+		baseHook.NewResolver = hook.NewResolver
+	}
+	if hook.NewTransformer != nil {
+		baseHook.NewTransformer = hook.NewTransformer
+	}
+	if hook.BeginTx != nil {
+		baseHook.BeginTx = hook.BeginTx
+	}
+	if hook.BeginTxFunc != nil {
+		baseHook.BeginTxFunc = hook.BeginTxFunc
+	}
+	if hook.CopyFrom != nil {
+		baseHook.CopyFrom = hook.CopyFrom
+	}
+	if hook.Exec != nil {
+		baseHook.Exec = hook.Exec
+	}
+	if hook.Ping != nil {
+		baseHook.Ping = hook.Ping
+	}
+	if hook.Prepare != nil {
+		baseHook.Prepare = hook.Prepare
+	}
+	if hook.Query != nil {
+		baseHook.Query = hook.Query
+	}
+	if hook.SendBatch != nil {
+		baseHook.SendBatch = hook.SendBatch
+	}
+	if hook.Find != nil {
+		baseHook.Find = hook.Find
+	}
+	if hook.FindAll != nil {
+		baseHook.FindAll = hook.FindAll
+	}
+	if hook.Commit != nil {
+		baseHook.Commit = hook.Commit
+	}
+	if hook.Rollback != nil {
+		baseHook.Rollback = hook.Rollback
+	}
+	if hook.NestedBegin != nil {
+		baseHook.NestedBegin = hook.NestedBegin
+	}
+	if hook.NestedBeginFunc != nil {
+		baseHook.NestedBeginFunc = hook.NestedBeginFunc
 	}
 }
