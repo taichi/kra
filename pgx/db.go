@@ -114,9 +114,7 @@ func (conn *Conn) Exec(ctx context.Context, query string, args ...interface{}) (
 }
 
 func (conn *Conn) Ping(ctx context.Context) error {
-	return conn.core.hook.Ping(func(c context.Context) error {
-		return conn.conn.Ping(c)
-	}, ctx)
+	return conn.core.hook.Ping(conn.conn.Ping, ctx)
 }
 
 func (conn *Conn) Prepare(ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
@@ -196,9 +194,7 @@ func (db *DB) BeginTxFunc(ctx context.Context, txOptions pgx.TxOptions, fn func(
 }
 
 func (db *DB) Ping(ctx context.Context) error {
-	return db.core.hook.Ping(func(c context.Context) error {
-		return db.pool.Ping(c)
-	}, ctx)
+	return db.core.hook.Ping(db.pool.Ping, ctx)
 }
 
 func (db *DB) Exec(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
@@ -279,15 +275,11 @@ func (tx *Tx) BeginFunc(ctx context.Context, fn func(*Tx) error) error {
 }
 
 func (tx *Tx) Commit(ctx context.Context) error {
-	return tx.core.hook.Tx.Commit(func(c context.Context) error {
-		return tx.tx.Commit(c)
-	}, ctx)
+	return tx.core.hook.Tx.Commit(tx.tx.Commit, ctx)
 }
 
 func (tx *Tx) Rollback(ctx context.Context) error {
-	return tx.core.hook.Tx.Rollback(func(c context.Context) error {
-		return tx.tx.Rollback(c)
-	}, ctx)
+	return tx.core.hook.Tx.Rollback(tx.tx.Rollback, ctx)
 }
 
 func (tx *Tx) CopyFrom(ctx context.Context, tableName Identifier, rowSrc interface{}) (int64, error) {
