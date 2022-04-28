@@ -173,6 +173,10 @@ func (db *DB) Begin(ctx context.Context) (*Tx, error) {
 	return db.BeginTx(ctx, pgx.TxOptions{})
 }
 
+func (db *DB) BeginFunc(ctx context.Context, f func(*Tx) error) error {
+	return db.BeginTxFunc(ctx, pgx.TxOptions{}, f)
+}
+
 func (db *DB) BeginTx(ctx context.Context, opts pgx.TxOptions) (*Tx, error) {
 	return db.core.hook.BeginTx(func(c context.Context, o pgx.TxOptions) (*Tx, error) {
 		if tx, err := db.pool.BeginTx(c, o); err != nil {
@@ -181,6 +185,14 @@ func (db *DB) BeginTx(ctx context.Context, opts pgx.TxOptions) (*Tx, error) {
 			return &Tx{tx, tx.Conn(), db.core, &db.count}, nil
 		}
 	}, ctx, opts)
+}
+
+func (db *DB) BeginTxFunc(ctx context.Context, txOptions pgx.TxOptions, fn func(*Tx) error) error {
+	return db.core.hook.BeginTxFunc(func(c context.Context, o pgx.TxOptions, f func(*Tx) error) error {
+		return db.pool.BeginTxFunc(c, o, func(tx pgx.Tx) error {
+			return f(&Tx{tx, tx.Conn(), db.core, &db.count})
+		})
+	}, ctx, txOptions, fn)
 }
 
 func (db *DB) Ping(ctx context.Context) error {
@@ -260,7 +272,7 @@ func (tx *Tx) Begin(ctx context.Context) (*Tx, error) {
 
 func (tx *Tx) BeginFunc(ctx context.Context, fn func(*Tx) error) error {
 	return tx.core.hook.Tx.BeginFunc(func(c context.Context, f func(*Tx) error) error {
-		return tx.tx.BeginFunc(ctx, func(newone pgx.Tx) error {
+		return tx.tx.BeginFunc(c, func(newone pgx.Tx) error {
 			return f(&Tx{newone, tx.conn, tx.core, tx.count})
 		})
 	}, ctx, fn)
