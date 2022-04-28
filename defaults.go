@@ -44,13 +44,3 @@ func NewCore(db DB) *Core {
 
 	return core
 }
-
-func (core *Core) Analyze(query string, args ...interface{}) (rawQuery string, vars []interface{}, err error) {
-	if analyzer, err := core.Parse(query); err != nil {
-		return "", nil, err
-	} else if resolver, err := core.NewResolver(args...); err != nil {
-		return "", nil, err
-	} else {
-		return analyzer.Analyze(resolver)
-	}
-}
