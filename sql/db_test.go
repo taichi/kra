@@ -46,7 +46,7 @@ type fixture struct {
 
 func setup(t *testing.T) (*TestTable, error) {
 
-	core := kra.NewCore(kra.PostgreSQL)
+	core := NewCore(kra.PostgreSQL, nil)
 
 	table := newTestTable()
 

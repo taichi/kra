@@ -38,7 +38,7 @@ type Film struct {
 func main() {
 	ctx := context.Background()
 
-	db, err := sql.Open(kra.NewCore(kra.PostgreSQL), "pgx", "user=test password=test host=localhost port=5432 database=test sslmode=disable")
+	db, err := sql.Open(sql.NewCore(kra.PostgreSQL, nil), "pgx", "user=test password=test host=localhost port=5432 database=test sslmode=disable")
 	if err != nil {
 		fmt.Println("open", err)
 		return

@@ -21,7 +21,7 @@ import (
 	"github.com/taichi/kra"
 )
 
-func Open(core *kra.Core, driverName, dataSourceName string) (*DB, error) {
+func Open(core *Core, driverName, dataSourceName string) (*DB, error) {
 	if db, err := sql.Open(driverName, dataSourceName); err != nil {
 		return nil, err
 	} else {
@@ -31,10 +31,10 @@ func Open(core *kra.Core, driverName, dataSourceName string) (*DB, error) {
 
 type Conn struct {
 	conn *sql.Conn
-	core *kra.Core
+	core *Core
 }
 
-func NewConn(conn *sql.Conn, core *kra.Core) *Conn {
+func NewConn(conn *sql.Conn, core *Core) *Conn {
 	return &Conn{conn, core}
 }
 
@@ -84,10 +84,10 @@ func (conn *Conn) FindAll(ctx context.Context, dest []interface{}, query string,
 
 type DB struct {
 	db   *sql.DB
-	core *kra.Core
+	core *Core
 }
 
-func NewDB(db *sql.DB, core *kra.Core) *DB {
+func NewDB(db *sql.DB, core *Core) *DB {
 	return &DB{db, core}
 }
 
@@ -137,7 +137,7 @@ func (db *DB) FindAll(ctx context.Context, dest interface{}, query string, args 
 
 type Tx struct {
 	tx   *sql.Tx
-	core *kra.Core
+	core *Core
 }
 
 func (tx *Tx) Tx() *sql.Tx {
@@ -174,7 +174,7 @@ func (tx *Tx) FindAll(ctx context.Context, dest []interface{}, query string, arg
 
 type Stmt struct {
 	stmt  *sql.Stmt
-	core  *kra.Core
+	core  *Core
 	query kra.QueryAnalyzer
 }
 
