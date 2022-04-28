@@ -41,11 +41,21 @@ type Hook struct {
 	Find        func(original func(ctx context.Context, dest interface{}, query string, args ...interface{}) error, ctx context.Context, dest interface{}, query string, args ...interface{}) error
 	FindAll     func(original func(ctx context.Context, dest interface{}, query string, args ...interface{}) error, ctx context.Context, dest interface{}, query string, args ...interface{}) error
 
+	Conn         *ConnHook
+	DB           *DBHook
 	Tx           *TxHook
 	Stmt         *StmtHook
 	Rows         *RowsHook
 	Batch        *BatchHook
 	BatchResults *BatchResultsHook
+}
+
+type ConnHook struct {
+	Close func(original func(ctx context.Context) error, ctx context.Context) error
+}
+
+type DBHook struct {
+	Close func(original func() error) error
 }
 
 type TxHook struct {
@@ -59,12 +69,14 @@ type TxHook struct {
 type StmtHook struct {
 	Exec  func(original func(ctx context.Context, args ...interface{}) (pgconn.CommandTag, error), ctx context.Context, args ...interface{}) (pgconn.CommandTag, error)
 	Query func(original func(ctx context.Context, args ...interface{}) (*Rows, error), ctx context.Context, args ...interface{}) (*Rows, error)
+	Close func(original func(ctx context.Context) error, ctx context.Context) error
 }
 
 type RowsHook struct {
-	Next func(original func() bool) bool
-	Err  func(original func() error) error
-	Scan func(original func(dest interface{}) error, dest interface{}) error
+	Next  func(original func() bool) bool
+	Err   func(original func() error) error
+	Scan  func(original func(dest interface{}) error, dest interface{}) error
+	Close func(original func() error) error
 }
 
 type BatchHook struct {
@@ -117,6 +129,8 @@ func NewHook(hook *Hook) *Hook {
 		FindAll: func(original func(ctx context.Context, dest interface{}, query string, args ...interface{}) error, ctx context.Context, dest interface{}, query string, args ...interface{}) error {
 			return original(ctx, dest, query, args...)
 		},
+		Conn:         NewConnHook(),
+		DB:           NewDBHook(),
 		Tx:           NewTxHook(),
 		Stmt:         NewStmtHook(),
 		Rows:         NewRowsHook(),
@@ -126,6 +140,12 @@ func NewHook(hook *Hook) *Hook {
 
 	if hook != nil {
 		baseHook.Merge(hook)
+		if hook.Conn != nil {
+			baseHook.Conn.Merge(hook.Conn)
+		}
+		if hook.DB != nil {
+			baseHook.DB.Merge(hook.DB)
+		}
 		if hook.Tx != nil {
 			baseHook.Tx.Merge(hook.Tx)
 		}
@@ -188,6 +208,34 @@ func (baseHook *Hook) Merge(hook *Hook) {
 	}
 }
 
+func NewConnHook() *ConnHook {
+	return &ConnHook{
+		Close: func(original func(ctx context.Context) error, ctx context.Context) error {
+			return original(ctx)
+		},
+	}
+}
+
+func (baseHook *ConnHook) Merge(hook *ConnHook) {
+	if hook.Close != nil {
+		baseHook.Close = hook.Close
+	}
+}
+
+func NewDBHook() *DBHook {
+	return &DBHook{
+		Close: func(original func() error) error {
+			return original()
+		},
+	}
+}
+
+func (baseHook *DBHook) Merge(hook *DBHook) {
+	if hook.Close != nil {
+		baseHook.Close = hook.Close
+	}
+}
+
 func NewTxHook() *TxHook {
 	return &TxHook{
 		Commit: func(original func(ctx context.Context) error, ctx context.Context) error {
@@ -228,6 +276,9 @@ func NewStmtHook() *StmtHook {
 		Query: func(original func(ctx context.Context, args ...interface{}) (*Rows, error), ctx context.Context, args ...interface{}) (*Rows, error) {
 			return original(ctx, args...)
 		},
+		Close: func(original func(ctx context.Context) error, ctx context.Context) error {
+			return original(ctx)
+		},
 	}
 }
 
@@ -237,6 +288,9 @@ func (basehook *StmtHook) Merge(hook *StmtHook) {
 	}
 	if hook.Query != nil {
 		basehook.Query = hook.Query
+	}
+	if hook.Close != nil {
+		basehook.Close = hook.Close
 	}
 }
 
@@ -251,6 +305,9 @@ func NewRowsHook() *RowsHook {
 		Scan: func(original func(dest interface{}) error, dest interface{}) error {
 			return original(dest)
 		},
+		Close: func(original func() error) error {
+			return original()
+		},
 	}
 }
 
@@ -263,6 +320,9 @@ func (basehook *RowsHook) Merge(hook *RowsHook) {
 	}
 	if hook.Scan != nil {
 		basehook.Scan = hook.Scan
+	}
+	if hook.Close != nil {
+		basehook.Close = hook.Close
 	}
 }
 

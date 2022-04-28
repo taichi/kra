@@ -74,7 +74,9 @@ func (conn *Conn) Conn() *pgx.Conn {
 }
 
 func (conn *Conn) Close(ctx context.Context) error {
-	return conn.conn.Close(ctx)
+	return conn.core.hook.Conn.Close(func(c context.Context) error {
+		return conn.conn.Close(c)
+	}, ctx)
 }
 
 func (conn *Conn) Begin(ctx context.Context) (*Tx, error) {
@@ -161,8 +163,10 @@ func (db *DB) Pool() *pgxpool.Pool {
 }
 
 func (db *DB) Close() error {
-	db.pool.Close()
-	return nil
+	return db.core.hook.DB.Close(func() error {
+		db.pool.Close()
+		return nil
+	})
 }
 
 func (db *DB) Begin(ctx context.Context) (*Tx, error) {
@@ -325,9 +329,11 @@ func (stmt *Stmt) Stmt() *pgconn.StatementDescription {
 const smalltime = 5
 
 func (stmt *Stmt) Close(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, time.Second*smalltime)
-	defer cancel()
-	return stmt.conn.Deallocate(ctx, stmt.stmt.Name)
+	return stmt.core.hook.Stmt.Close(func(c context.Context) error {
+		x, cancel := context.WithTimeout(c, time.Second*smalltime)
+		defer cancel()
+		return stmt.conn.Deallocate(x, stmt.stmt.Name)
+	}, ctx)
 }
 
 func (stmt *Stmt) Exec(ctx context.Context, args ...interface{}) (pgconn.CommandTag, error) {
@@ -403,8 +409,10 @@ func (rows *Rows) Rows() pgx.Rows {
 }
 
 func (rows *Rows) Close() error {
-	rows.rows.Close()
-	return rows.rows.Err()
+	return rows.core.hook.Rows.Close(func() error {
+		rows.rows.Close()
+		return rows.rows.Err()
+	})
 }
 
 func (rows *Rows) Scan(dest interface{}) error {
