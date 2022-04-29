@@ -27,7 +27,7 @@ type Hook struct {
 	NewResolver    func(original func(args ...interface{}) (kra.ValueResolver, error), args ...interface{}) (kra.ValueResolver, error)
 	NewTransformer func(original func() kra.Transformer) kra.Transformer
 
-	// pgx hooks
+	// sql hooks
 	BeginTx func(original func(ctx context.Context, txOptions *sql.TxOptions) (*Tx, error), ctx context.Context, txOptions *sql.TxOptions) (*Tx, error)
 	Exec    func(original func(ctx context.Context, query string, args ...interface{}) (sql.Result, error), ctx context.Context, query string, args ...interface{}) (sql.Result, error)
 	Ping    func(original func(ctx context.Context) error, ctx context.Context) error

@@ -43,7 +43,7 @@ func (conn *Conn) Conn() *sql.Conn {
 }
 
 func (conn *Conn) Close() error {
-	return conn.conn.Close()
+	return conn.core.hook.Conn.Close(conn.conn.Close)
 }
 
 func (conn *Conn) Begin(ctx context.Context) (*Tx, error) {
@@ -51,15 +51,17 @@ func (conn *Conn) Begin(ctx context.Context) (*Tx, error) {
 }
 
 func (conn *Conn) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
-	if tx, err := conn.conn.BeginTx(ctx, opts); err != nil {
-		return nil, err
-	} else {
-		return &Tx{tx, conn.core}, nil
-	}
+	return conn.core.hook.BeginTx(func(c context.Context, o *sql.TxOptions) (*Tx, error) {
+		if tx, err := conn.conn.BeginTx(c, o); err != nil {
+			return nil, err
+		} else {
+			return &Tx{tx, conn.core}, nil
+		}
+	}, ctx, opts)
 }
 
 func (conn *Conn) Ping(ctx context.Context) error {
-	return conn.conn.PingContext(ctx)
+	return conn.core.hook.Ping(conn.conn.PingContext, ctx)
 }
 
 func (conn *Conn) Exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
@@ -71,15 +73,21 @@ func (conn *Conn) Prepare(ctx context.Context, query string, examples ...interfa
 }
 
 func (conn *Conn) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
-	return doQuery(conn.core, conn.conn.QueryContext, ctx, query, args...)
+	return conn.core.hook.Query(func(c context.Context, q string, a ...interface{}) (*Rows, error) {
+		return doQuery(conn.core, conn.conn.QueryContext, c, q, a...)
+	}, ctx, query, args...)
 }
 
 func (conn *Conn) Find(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return doFind(conn.core, conn.conn.QueryContext, ctx, dest, query, args...)
+	return conn.core.hook.Find(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+		return doFind(conn.core, conn.conn.QueryContext, c, d, q, a...)
+	}, ctx, dest, query, args...)
 }
 
-func (conn *Conn) FindAll(ctx context.Context, dest []interface{}, query string, args ...interface{}) error {
-	return doFindAll(conn.core, conn.conn.QueryContext, ctx, dest, query, args...)
+func (conn *Conn) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	return conn.core.hook.FindAll(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+		return doFindAll(conn.core, conn.conn.QueryContext, c, d, q, a...)
+	}, ctx, dest, query, args...)
 }
 
 type DB struct {
@@ -96,7 +104,7 @@ func (db *DB) DB() *sql.DB {
 }
 
 func (db *DB) Close() error {
-	return db.db.Close()
+	return db.core.hook.DB.Close(db.db.Close)
 }
 
 func (db *DB) Begin(ctx context.Context) (*Tx, error) {
@@ -104,15 +112,17 @@ func (db *DB) Begin(ctx context.Context) (*Tx, error) {
 }
 
 func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
-	if tx, err := db.db.BeginTx(ctx, opts); err != nil {
-		return nil, err
-	} else {
-		return &Tx{tx, db.core}, nil
-	}
+	return db.core.hook.BeginTx(func(c context.Context, o *sql.TxOptions) (*Tx, error) {
+		if tx, err := db.db.BeginTx(c, o); err != nil {
+			return nil, err
+		} else {
+			return &Tx{tx, db.core}, nil
+		}
+	}, ctx, opts)
 }
 
 func (db *DB) Ping(ctx context.Context) error {
-	return db.db.PingContext(ctx)
+	return db.core.hook.Ping(db.db.PingContext, ctx)
 }
 
 func (db *DB) Exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
@@ -124,15 +134,21 @@ func (db *DB) Prepare(ctx context.Context, query string, examples ...interface{}
 }
 
 func (db *DB) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
-	return doQuery(db.core, db.db.QueryContext, ctx, query, args...)
+	return db.core.hook.Query(func(c context.Context, q string, a ...interface{}) (*Rows, error) {
+		return doQuery(db.core, db.db.QueryContext, c, q, a...)
+	}, ctx, query, args...)
 }
 
 func (db *DB) Find(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return doFind(db.core, db.db.QueryContext, ctx, dest, query, args...)
+	return db.core.hook.Find(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+		return doFind(db.core, db.db.QueryContext, c, d, q, a...)
+	}, ctx, dest, query, args...)
 }
 
 func (db *DB) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return doFindAll(db.core, db.db.QueryContext, ctx, dest, query, args...)
+	return db.core.hook.FindAll(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+		return doFindAll(db.core, db.db.QueryContext, c, d, q, a...)
+	}, ctx, dest, query, args...)
 }
 
 type Tx struct {
@@ -145,11 +161,11 @@ func (tx *Tx) Tx() *sql.Tx {
 }
 
 func (tx *Tx) Commit() error {
-	return tx.tx.Commit()
+	return tx.core.hook.Tx.Commit(tx.tx.Commit)
 }
 
 func (tx *Tx) Rollback() error {
-	return tx.tx.Rollback()
+	return tx.core.hook.Tx.Rollback(tx.tx.Rollback)
 }
 
 func (tx *Tx) Exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
@@ -161,15 +177,21 @@ func (tx *Tx) Prepare(ctx context.Context, query string, examples ...interface{}
 }
 
 func (tx *Tx) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
-	return doQuery(tx.core, tx.tx.QueryContext, ctx, query, args...)
+	return tx.core.hook.Query(func(c context.Context, q string, a ...interface{}) (*Rows, error) {
+		return doQuery(tx.core, tx.tx.QueryContext, c, q, a...)
+	}, ctx, query, args...)
 }
 
 func (tx *Tx) Find(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return doFind(tx.core, tx.tx.QueryContext, ctx, dest, query, args...)
+	return tx.core.hook.Find(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+		return doFind(tx.core, tx.tx.QueryContext, c, d, q, a...)
+	}, ctx, dest, query, args...)
 }
 
-func (tx *Tx) FindAll(ctx context.Context, dest []interface{}, query string, args ...interface{}) error {
-	return doFindAll(tx.core, tx.tx.QueryContext, ctx, dest, query, args...)
+func (tx *Tx) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	return tx.core.hook.FindAll(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+		return doFindAll(tx.core, tx.tx.QueryContext, c, d, q, a...)
+	}, ctx, dest, query, args...)
 }
 
 type Stmt struct {
@@ -183,35 +205,40 @@ func (stmt *Stmt) Stmt() *sql.Stmt {
 }
 
 func (stmt *Stmt) Close() error {
-	return stmt.stmt.Close()
+	return stmt.core.hook.Stmt.Close(stmt.stmt.Close)
 }
 
 func (stmt *Stmt) Exec(ctx context.Context, args ...interface{}) (sql.Result, error) {
-	if resolver, err := stmt.core.NewResolver(args...); err != nil {
-		return nil, err
-	} else if _, bindArgs, err := stmt.query.Analyze(resolver); err != nil {
-		return nil, err
-	} else {
-		return stmt.stmt.Exec(bindArgs...)
-	}
+	return stmt.core.hook.Stmt.Exec(func(c context.Context, a ...interface{}) (sql.Result, error) {
+		if resolver, err := stmt.core.NewResolver(a...); err != nil {
+			return nil, err
+		} else if _, bindArgs, err := stmt.query.Analyze(resolver); err != nil {
+			return nil, err
+		} else {
+			return stmt.stmt.Exec(bindArgs...)
+		}
+	}, ctx, args...)
 }
 
 func (stmt *Stmt) Query(ctx context.Context, args ...interface{}) (*Rows, error) {
-	if resolver, err := stmt.core.NewResolver(args...); err != nil {
-		return nil, err
-	} else if _, bindArgs, err := stmt.query.Analyze(resolver); err != nil {
-		return nil, err
-	} else if rows, err := stmt.stmt.Query(bindArgs...); err != nil {
-		return nil, err
-	} else if rows.Err() != nil {
-		return nil, rows.Err()
-	} else {
-		return &Rows{rows, stmt.core.NewTransformer()}, nil
-	}
+	return stmt.core.hook.Stmt.Query(func(c context.Context, a ...interface{}) (*Rows, error) {
+		if resolver, err := stmt.core.NewResolver(a...); err != nil {
+			return nil, err
+		} else if _, bindArgs, err := stmt.query.Analyze(resolver); err != nil {
+			return nil, err
+		} else if rows, err := stmt.stmt.Query(bindArgs...); err != nil {
+			return nil, err
+		} else if rows.Err() != nil {
+			return nil, rows.Err()
+		} else {
+			return &Rows{rows, stmt.core, stmt.core.NewTransformer()}, nil
+		}
+	}, ctx, args...)
 }
 
 type Rows struct {
 	rows        *sql.Rows
+	core        *Core
 	transformer kra.Transformer
 }
 
@@ -220,9 +247,11 @@ func (rows *Rows) Rows() *sql.Rows {
 }
 
 func (rows *Rows) Close() error {
-	return rows.rows.Close()
+	return rows.core.hook.Rows.Close(rows.rows.Close)
 }
 
 func (rows *Rows) Scan(dest interface{}) error {
-	return rows.transformer.Transform(rows.rows, dest)
+	return rows.core.hook.Rows.Scan(func(d interface{}) error {
+		return rows.transformer.Transform(rows.rows, d)
+	}, dest)
 }
