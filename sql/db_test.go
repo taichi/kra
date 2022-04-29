@@ -45,9 +45,8 @@ type fixture struct {
 	TestValue string `db:"test_value"`
 }
 
-func setup(t *testing.T, hook *Hook) (*TestTable, error) {
-
-	core := NewCore(kra.PostgreSQL, hook)
+func setup(t *testing.T, hooks ...kra.Hook) (*TestTable, error) {
+	core := NewCore(kra.PostgreSQL, hooks...)
 
 	table := newTestTable()
 
@@ -122,10 +121,10 @@ func insertData(t *testing.T, table *TestTable) error {
 
 func TestExec(t *testing.T) {
 	called := false
-	table, err := setup(t, &Hook{
-		Exec: func(original func(ctx context.Context, query string, args ...interface{}) (sql.Result, error), ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	table, err := setup(t, &DBHook{
+		Exec: func(invocation *DBExec, ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 			called = true
-			return original(ctx, query, args...)
+			return invocation.Proceed(ctx, query, args...)
 		},
 	})
 	if err != nil {
@@ -147,10 +146,10 @@ func TestExec(t *testing.T) {
 
 func TestExecConn(t *testing.T) {
 	called := false
-	table, err := setup(t, &Hook{
-		Exec: func(original func(ctx context.Context, query string, args ...interface{}) (sql.Result, error), ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	table, err := setup(t, &ConnHook{
+		Exec: func(invocation *ConnExec, ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 			called = true
-			return original(ctx, query, args...)
+			return invocation.Proceed(ctx, query, args...)
 		},
 	})
 	if err != nil {
@@ -179,7 +178,7 @@ func TestExecConn(t *testing.T) {
 }
 
 func TestFind(t *testing.T) {
-	table, err := setup(t, nil)
+	table, err := setup(t)
 	if err != nil {
 		t.Error(err)
 		return
@@ -216,24 +215,27 @@ func TestFindConn(t *testing.T) {
 	calledRes := false
 	calledTra := false
 	called := false
-	table, err := setup(t, &Hook{
-		Parse: func(original func(query string) (kra.QueryAnalyzer, error), query string) (kra.QueryAnalyzer, error) {
-			calledParse = true
-			return original(query)
+	table, err := setup(t,
+		&kra.CoreHook{
+			Parse: func(invocation *kra.CoreParse, query string) (kra.QueryAnalyzer, error) {
+				calledParse = true
+				return invocation.Proceed(query)
+			},
+			NewResolver: func(invocation *kra.CoreNewResolver, args ...interface{}) (kra.ValueResolver, error) {
+				calledRes = true
+				return invocation.Proceed(args...)
+			},
+			NewTransformer: func(invocation *kra.CoreNewTransformer) kra.Transformer {
+				calledTra = true
+				return invocation.Proceed()
+			},
 		},
-		NewResolver: func(original func(args ...interface{}) (kra.ValueResolver, error), args ...interface{}) (kra.ValueResolver, error) {
-			calledRes = true
-			return original(args...)
-		},
-		NewTransformer: func(original func() kra.Transformer) kra.Transformer {
-			calledTra = true
-			return original()
-		},
-		Find: func(original func(ctx context.Context, dst interface{}, query string, args ...interface{}) error, ctx context.Context, dst interface{}, query string, args ...interface{}) error {
-			called = true
-			return original(ctx, dst, query, args...)
-		},
-	})
+		&ConnHook{
+			Find: func(invocation *ConnFind, ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+				called = true
+				return invocation.Proceed(ctx, dest, query, args...)
+			},
+		})
 	if err != nil {
 		t.Error(err)
 		return
@@ -264,39 +266,19 @@ func TestFindConn(t *testing.T) {
 }
 
 func TestFindAll(t *testing.T) {
-	table, err := setup(t, nil)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	if err := insertData(t, table); err != nil {
-		t.Error(err)
-		return
-	}
-
-	var dstAry []*fixture
-	if err := table.db.FindAll(context.Background(), &dstAry, table.findAll); err != nil {
-		t.Error(err)
-		return
-	}
-
-	assert.Equal(t, 3, len(dstAry))
-	assert.Equal(t, "111", dstAry[0].TestKey)
-}
-
-func TestFindAllConn(t *testing.T) {
 	called := false
-	table, err := setup(t, &Hook{
-		FindAll: func(original func(ctx context.Context, dst interface{}, query string, args ...interface{}) error, ctx context.Context, dst interface{}, query string, args ...interface{}) error {
+	table, err := setup(t, &DBHook{
+		FindAll: func(invocation *DBFindAll, ctx context.Context, dest interface{}, query string, args ...interface{}) error {
 			called = true
-			return original(ctx, dst, query, args...)
+			return invocation.Proceed(ctx, dest, query, args...)
 		},
 	})
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	if err := insertData(t, table); err != nil {
+	err = insertData(t, table)
+	if err != nil {
 		t.Error(err)
 		return
 	}
@@ -312,8 +294,44 @@ func TestFindAllConn(t *testing.T) {
 	assert.True(t, called)
 }
 
+func TestFindAllConn(t *testing.T) {
+	called := false
+	table, err := setup(t, &ConnHook{
+		FindAll: func(invocation *ConnFindAll, ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+			called = true
+			return invocation.Proceed(ctx, dest, query, args...)
+		},
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	err = insertData(t, table)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	conn, err := table.db.Conn(context.Background())
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer conn.Close()
+
+	var dstAry []*fixture
+	if err := conn.FindAll(context.Background(), &dstAry, table.findAll); err != nil {
+		t.Error(err)
+		return
+	}
+
+	assert.Equal(t, 3, len(dstAry))
+	assert.Equal(t, "111", dstAry[0].TestKey)
+	assert.True(t, called)
+}
+
 func TestFindAllMap(t *testing.T) {
-	table, err := setup(t, nil)
+	table, err := setup(t)
 	if err != nil {
 		t.Error(err)
 		return
@@ -334,7 +352,7 @@ func TestFindAllMap(t *testing.T) {
 }
 
 func TestPrepare_Exec(t *testing.T) {
-	table, err := setup(t, nil)
+	table, err := setup(t)
 	if err != nil {
 		t.Error(err)
 		return
@@ -363,10 +381,10 @@ func TestPrepare_Exec(t *testing.T) {
 
 func TestQueryConn(t *testing.T) {
 	called := false
-	table, err := setup(t, &Hook{
-		Query: func(original func(ctx context.Context, query string, args ...interface{}) (*Rows, error), ctx context.Context, query string, args ...interface{}) (*Rows, error) {
+	table, err := setup(t, &DBHook{
+		Query: func(invocation *DBQuery, ctx context.Context, query string, args ...interface{}) (*Rows, error) {
 			called = true
-			return original(ctx, query, args...)
+			return invocation.Proceed(ctx, query, args...)
 		},
 	})
 	if err != nil {
@@ -405,7 +423,7 @@ func TestQueryConn(t *testing.T) {
 }
 
 func TestPrepare_Query(t *testing.T) {
-	table, err := setup(t, nil)
+	table, err := setup(t)
 	if err != nil {
 		t.Error(err)
 		return
@@ -446,16 +464,15 @@ func TestPrepare_Query(t *testing.T) {
 func TestTx(t *testing.T) {
 	calledBegin := false
 	calledCommit := false
-	table, err := setup(t, &Hook{
-		BeginTx: func(original func(ctx context.Context, txOptions *sql.TxOptions) (*Tx, error), ctx context.Context, txOptions *sql.TxOptions) (*Tx, error) {
+	table, err := setup(t, &DBHook{
+		BeginTx: func(invocation *DBBeginTx, ctx context.Context, txOptions *sql.TxOptions) (*Tx, error) {
 			calledBegin = true
-			return original(ctx, txOptions)
+			return invocation.Proceed(ctx, txOptions)
 		},
-		Tx: &TxHook{
-			Commit: func(original func() error) error {
-				calledCommit = true
-				return original()
-			},
+	}, &TxHook{
+		Commit: func(invocation *TxCommit) error {
+			calledCommit = true
+			return invocation.Proceed()
 		},
 	})
 	if err != nil {
@@ -482,16 +499,15 @@ func TestTx(t *testing.T) {
 func TestTx_Rollback(t *testing.T) {
 	calledBegin := false
 	calledRollback := false
-	table, err := setup(t, &Hook{
-		BeginTx: func(original func(ctx context.Context, txOptions *sql.TxOptions) (*Tx, error), ctx context.Context, txOptions *sql.TxOptions) (*Tx, error) {
+	table, err := setup(t, &DBHook{
+		BeginTx: func(invocation *DBBeginTx, ctx context.Context, txOptions *sql.TxOptions) (*Tx, error) {
 			calledBegin = true
-			return original(ctx, txOptions)
+			return invocation.Proceed(ctx, txOptions)
 		},
-		Tx: &TxHook{
-			Rollback: func(original func() error) error {
-				calledRollback = true
-				return original()
-			},
+	}, &TxHook{
+		Rollback: func(invocation *TxRollback) error {
+			calledRollback = true
+			return invocation.Proceed()
 		},
 	})
 	if err != nil {

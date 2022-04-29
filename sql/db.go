@@ -43,7 +43,7 @@ func (conn *Conn) Conn() *sql.Conn {
 }
 
 func (conn *Conn) Close() error {
-	return conn.core.hook.Conn.Close(conn.conn.Close)
+	return NewConnClose(conn, conn.conn.Close).Proceed()
 }
 
 func (conn *Conn) Begin(ctx context.Context) (*Tx, error) {
@@ -51,43 +51,47 @@ func (conn *Conn) Begin(ctx context.Context) (*Tx, error) {
 }
 
 func (conn *Conn) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
-	return conn.core.hook.BeginTx(func(c context.Context, o *sql.TxOptions) (*Tx, error) {
+	return NewConnBeginTx(conn, func(c context.Context, o *sql.TxOptions) (*Tx, error) {
 		if tx, err := conn.conn.BeginTx(c, o); err != nil {
 			return nil, err
 		} else {
 			return &Tx{tx, conn.core}, nil
 		}
-	}, ctx, opts)
+	}).Proceed(ctx, opts)
 }
 
 func (conn *Conn) Ping(ctx context.Context) error {
-	return conn.core.hook.Ping(conn.conn.PingContext, ctx)
+	return NewConnPing(conn, conn.conn.PingContext).Proceed(ctx)
 }
 
 func (conn *Conn) Exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-	return doExec(conn.core, conn.conn.ExecContext, ctx, query, args...)
+	return NewConnExec(conn, func(c context.Context, q string, a ...interface{}) (sql.Result, error) {
+		return doExec(conn.core, conn.conn.ExecContext, c, q, a...)
+	}).Proceed(ctx, query, args...)
 }
 
 func (conn *Conn) Prepare(ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
-	return doPrepare(conn.core, conn.conn.PrepareContext, ctx, query, examples...)
+	return NewConnPrepare(conn, func(c context.Context, q string, e ...interface{}) (*Stmt, error) {
+		return doPrepare(conn.core, conn.conn.PrepareContext, c, q, e...)
+	}).Proceed(ctx, query, examples...)
 }
 
 func (conn *Conn) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
-	return conn.core.hook.Query(func(c context.Context, q string, a ...interface{}) (*Rows, error) {
+	return NewConnQuery(conn, func(c context.Context, q string, a ...interface{}) (*Rows, error) {
 		return doQuery(conn.core, conn.conn.QueryContext, c, q, a...)
-	}, ctx, query, args...)
+	}).Proceed(ctx, query, args...)
 }
 
 func (conn *Conn) Find(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return conn.core.hook.Find(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+	return NewConnFind(conn, func(c context.Context, d interface{}, q string, a ...interface{}) error {
 		return doFind(conn.core, conn.conn.QueryContext, c, d, q, a...)
-	}, ctx, dest, query, args...)
+	}).Proceed(ctx, dest, query, args...)
 }
 
 func (conn *Conn) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return conn.core.hook.FindAll(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+	return NewConnFindAll(conn, func(c context.Context, d interface{}, q string, a ...interface{}) error {
 		return doFindAll(conn.core, conn.conn.QueryContext, c, d, q, a...)
-	}, ctx, dest, query, args...)
+	}).Proceed(ctx, dest, query, args...)
 }
 
 type DB struct {
@@ -112,7 +116,7 @@ func (db *DB) Conn(ctx context.Context) (*Conn, error) {
 }
 
 func (db *DB) Close() error {
-	return db.core.hook.DB.Close(db.db.Close)
+	return NewDBClose(db, db.db.Close).Proceed()
 }
 
 func (db *DB) Begin(ctx context.Context) (*Tx, error) {
@@ -120,43 +124,47 @@ func (db *DB) Begin(ctx context.Context) (*Tx, error) {
 }
 
 func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
-	return db.core.hook.BeginTx(func(c context.Context, o *sql.TxOptions) (*Tx, error) {
+	return NewDBBeginTx(db, func(c context.Context, o *sql.TxOptions) (*Tx, error) {
 		if tx, err := db.db.BeginTx(c, o); err != nil {
 			return nil, err
 		} else {
 			return &Tx{tx, db.core}, nil
 		}
-	}, ctx, opts)
+	}).Proceed(ctx, opts)
 }
 
 func (db *DB) Ping(ctx context.Context) error {
-	return db.core.hook.Ping(db.db.PingContext, ctx)
+	return NewDBPing(db, db.db.PingContext).Proceed(ctx)
 }
 
 func (db *DB) Exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-	return doExec(db.core, db.db.ExecContext, ctx, query, args...)
+	return NewDBExec(db, func(c context.Context, q string, a ...interface{}) (sql.Result, error) {
+		return doExec(db.core, db.db.ExecContext, c, q, a...)
+	}).Proceed(ctx, query, args...)
 }
 
 func (db *DB) Prepare(ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
-	return doPrepare(db.core, db.db.PrepareContext, ctx, query, examples...)
+	return NewDBPrepare(db, func(c context.Context, q string, e ...interface{}) (*Stmt, error) {
+		return doPrepare(db.core, db.db.PrepareContext, c, q, e...)
+	}).Proceed(ctx, query, examples...)
 }
 
 func (db *DB) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
-	return db.core.hook.Query(func(c context.Context, q string, a ...interface{}) (*Rows, error) {
+	return NewDBQuery(db, func(c context.Context, q string, a ...interface{}) (*Rows, error) {
 		return doQuery(db.core, db.db.QueryContext, c, q, a...)
-	}, ctx, query, args...)
+	}).Proceed(ctx, query, args...)
 }
 
 func (db *DB) Find(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return db.core.hook.Find(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+	return NewDBFind(db, func(c context.Context, d interface{}, q string, a ...interface{}) error {
 		return doFind(db.core, db.db.QueryContext, c, d, q, a...)
-	}, ctx, dest, query, args...)
+	}).Proceed(ctx, dest, query, args...)
 }
 
 func (db *DB) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return db.core.hook.FindAll(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+	return NewDBFindAll(db, func(c context.Context, d interface{}, q string, a ...interface{}) error {
 		return doFindAll(db.core, db.db.QueryContext, c, d, q, a...)
-	}, ctx, dest, query, args...)
+	}).Proceed(ctx, dest, query, args...)
 }
 
 type Tx struct {
@@ -169,37 +177,41 @@ func (tx *Tx) Tx() *sql.Tx {
 }
 
 func (tx *Tx) Commit() error {
-	return tx.core.hook.Tx.Commit(tx.tx.Commit)
+	return NewTxCommit(tx, tx.tx.Commit).Proceed()
 }
 
 func (tx *Tx) Rollback() error {
-	return tx.core.hook.Tx.Rollback(tx.tx.Rollback)
+	return NewTxRollback(tx, tx.tx.Rollback).Proceed()
 }
 
 func (tx *Tx) Exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-	return doExec(tx.core, tx.tx.ExecContext, ctx, query, args...)
+	return NewTxExec(tx, func(c context.Context, q string, a ...interface{}) (sql.Result, error) {
+		return doExec(tx.core, tx.tx.ExecContext, c, q, a...)
+	}).Proceed(ctx, query, args...)
 }
 
 func (tx *Tx) Prepare(ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
-	return doPrepare(tx.core, tx.tx.PrepareContext, ctx, query, examples...)
+	return NewTxPrepare(tx, func(c context.Context, q string, e ...interface{}) (*Stmt, error) {
+		return doPrepare(tx.core, tx.tx.PrepareContext, c, q, e...)
+	}).Proceed(ctx, query, examples...)
 }
 
 func (tx *Tx) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
-	return tx.core.hook.Query(func(c context.Context, q string, a ...interface{}) (*Rows, error) {
+	return NewTxQuery(tx, func(c context.Context, q string, a ...interface{}) (*Rows, error) {
 		return doQuery(tx.core, tx.tx.QueryContext, c, q, a...)
-	}, ctx, query, args...)
+	}).Proceed(ctx, query, args...)
 }
 
 func (tx *Tx) Find(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return tx.core.hook.Find(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+	return NewTxFind(tx, func(c context.Context, d interface{}, q string, a ...interface{}) error {
 		return doFind(tx.core, tx.tx.QueryContext, c, d, q, a...)
-	}, ctx, dest, query, args...)
+	}).Proceed(ctx, dest, query, args...)
 }
 
 func (tx *Tx) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return tx.core.hook.FindAll(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+	return NewTxFindAll(tx, func(c context.Context, d interface{}, q string, a ...interface{}) error {
 		return doFindAll(tx.core, tx.tx.QueryContext, c, d, q, a...)
-	}, ctx, dest, query, args...)
+	}).Proceed(ctx, dest, query, args...)
 }
 
 type Stmt struct {
@@ -213,11 +225,11 @@ func (stmt *Stmt) Stmt() *sql.Stmt {
 }
 
 func (stmt *Stmt) Close() error {
-	return stmt.core.hook.Stmt.Close(stmt.stmt.Close)
+	return NewStmtClose(stmt, stmt.stmt.Close).Proceed()
 }
 
 func (stmt *Stmt) Exec(ctx context.Context, args ...interface{}) (sql.Result, error) {
-	return stmt.core.hook.Stmt.Exec(func(c context.Context, a ...interface{}) (sql.Result, error) {
+	return NewStmtExec(stmt, func(c context.Context, a ...interface{}) (sql.Result, error) {
 		if resolver, err := stmt.core.NewResolver(a...); err != nil {
 			return nil, err
 		} else if _, bindArgs, err := stmt.query.Analyze(resolver); err != nil {
@@ -225,11 +237,11 @@ func (stmt *Stmt) Exec(ctx context.Context, args ...interface{}) (sql.Result, er
 		} else {
 			return stmt.stmt.Exec(bindArgs...)
 		}
-	}, ctx, args...)
+	}).Proceed(ctx, args...)
 }
 
 func (stmt *Stmt) Query(ctx context.Context, args ...interface{}) (*Rows, error) {
-	return stmt.core.hook.Stmt.Query(func(c context.Context, a ...interface{}) (*Rows, error) {
+	return NewStmtQuery(stmt, func(c context.Context, a ...interface{}) (*Rows, error) {
 		if resolver, err := stmt.core.NewResolver(a...); err != nil {
 			return nil, err
 		} else if _, bindArgs, err := stmt.query.Analyze(resolver); err != nil {
@@ -241,7 +253,7 @@ func (stmt *Stmt) Query(ctx context.Context, args ...interface{}) (*Rows, error)
 		} else {
 			return NewRows(stmt.core, rows), nil
 		}
-	}, ctx, args...)
+	}).Proceed(ctx, args...)
 }
 
 type Rows struct {
@@ -251,7 +263,7 @@ type Rows struct {
 }
 
 func NewRows(core *Core, rows *sql.Rows) *Rows {
-	return &Rows{rows, core, core.hook.NewTransformer(core.NewTransformer)}
+	return &Rows{rows, core, kra.NewCoreNewTransformer(core.Core, core.hooks.Core).Proceed()}
 }
 
 func (rows *Rows) Rows() *sql.Rows {
@@ -259,11 +271,11 @@ func (rows *Rows) Rows() *sql.Rows {
 }
 
 func (rows *Rows) Close() error {
-	return rows.core.hook.Rows.Close(rows.rows.Close)
+	return NewRowsClose(rows, rows.rows.Close).Proceed()
 }
 
 func (rows *Rows) Scan(dest interface{}) error {
-	return rows.core.hook.Rows.Scan(func(d interface{}) error {
+	return NewRowsScan(rows, func(d interface{}) error {
 		return rows.transformer.Transform(rows.rows, d)
-	}, dest)
+	}).Proceed(dest)
 }
