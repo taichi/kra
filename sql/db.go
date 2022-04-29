@@ -103,12 +103,20 @@ func (db *DB) DB() *sql.DB {
 	return db.db
 }
 
+func (db *DB) Conn(ctx context.Context) (*Conn, error) {
+	raw, err := db.db.Conn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return NewConn(raw, db.core), nil
+}
+
 func (db *DB) Close() error {
 	return db.core.hook.DB.Close(db.db.Close)
 }
 
 func (db *DB) Begin(ctx context.Context) (*Tx, error) {
-	return db.BeginTx(ctx, nil)
+	return db.BeginTx(ctx, &sql.TxOptions{})
 }
 
 func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
@@ -231,7 +239,7 @@ func (stmt *Stmt) Query(ctx context.Context, args ...interface{}) (*Rows, error)
 		} else if rows.Err() != nil {
 			return nil, rows.Err()
 		} else {
-			return &Rows{rows, stmt.core, stmt.core.NewTransformer()}, nil
+			return NewRows(stmt.core, rows), nil
 		}
 	}, ctx, args...)
 }
@@ -240,6 +248,10 @@ type Rows struct {
 	rows        *sql.Rows
 	core        *Core
 	transformer kra.Transformer
+}
+
+func NewRows(core *Core, rows *sql.Rows) *Rows {
+	return &Rows{rows, core, core.hook.NewTransformer(core.NewTransformer)}
 }
 
 func (rows *Rows) Rows() *sql.Rows {

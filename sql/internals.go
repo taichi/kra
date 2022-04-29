@@ -63,7 +63,7 @@ func doQuery(core *Core, query queryFn, ctx context.Context, queryString string,
 	} else if rows.Err() != nil {
 		return nil, rows.Err()
 	} else {
-		return &Rows{rows, core, core.NewTransformer()}, nil
+		return NewRows(core, rows), nil
 	}
 }
 
