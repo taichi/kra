@@ -145,10 +145,10 @@ func TestExecConn(t *testing.T) {
 		return
 	}
 	called := false
-	conn, err := ConnectConfig(ctx, config, &Hook{
-		Exec: func(original func(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error), ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
+	conn, err := ConnectConfig(ctx, config, &ConnHook{
+		Exec: func(invocation *ConnExec, ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
 			called = true
-			return original(ctx, query, args...)
+			return invocation.Proceed(ctx, query, args...)
 		},
 	})
 	if err != nil {
@@ -218,22 +218,23 @@ func TestFindConn(t *testing.T) {
 		calledTra := false
 		called := false
 		ctx := context.Background()
-		conn, err := ConnectConfig(ctx, config, &Hook{
-			Parse: func(original func(query string) (kra.QueryAnalyzer, error), query string) (kra.QueryAnalyzer, error) {
+		conn, err := ConnectConfig(ctx, config, &kra.CoreHook{
+			Parse: func(invocation *kra.CoreParse, query string) (kra.QueryAnalyzer, error) {
 				calledParse = true
-				return original(query)
+				return invocation.Proceed(query)
 			},
-			NewResolver: func(original func(args ...interface{}) (kra.ValueResolver, error), args ...interface{}) (kra.ValueResolver, error) {
+			NewResolver: func(invocation *kra.CoreNewResolver, args ...interface{}) (kra.ValueResolver, error) {
 				calledRes = true
-				return original(args...)
+				return invocation.Proceed(args...)
 			},
-			NewTransformer: func(original func() kra.Transformer) kra.Transformer {
+			NewTransformer: func(invocation *kra.CoreNewTransformer) kra.Transformer {
 				calledTra = true
-				return original()
+				return invocation.Proceed()
 			},
-			Find: func(original func(ctx context.Context, dst interface{}, query string, args ...interface{}) error, ctx context.Context, dst interface{}, query string, args ...interface{}) error {
+		}, &ConnHook{
+			Find: func(invocation *ConnFind, ctx context.Context, dest interface{}, query string, args ...interface{}) error {
 				called = true
-				return original(ctx, dst, query, args...)
+				return invocation.Proceed(ctx, dest, query, args...)
 			},
 		})
 		if err != nil {
@@ -293,10 +294,10 @@ func TestFindAllConn(t *testing.T) {
 		}
 		called := false
 		ctx := context.Background()
-		conn, err := ConnectConfig(ctx, config, &Hook{
-			FindAll: func(original func(ctx context.Context, dst interface{}, query string, args ...interface{}) error, ctx context.Context, dst interface{}, query string, args ...interface{}) error {
+		conn, err := ConnectConfig(ctx, config, &ConnHook{
+			FindAll: func(invocation *ConnFindAll, ctx context.Context, dest interface{}, query string, args ...interface{}) error {
 				called = true
-				return original(ctx, dst, query, args...)
+				return invocation.Proceed(ctx, dest, query, args...)
 			},
 		})
 		if err != nil {
@@ -384,10 +385,10 @@ func TestQueryConn(t *testing.T) {
 	called := false
 
 	ctx := context.Background()
-	conn, err := ConnectConfig(ctx, config, &Hook{
-		Query: func(original func(ctx context.Context, query string, args ...interface{}) (*Rows, error), ctx context.Context, query string, args ...interface{}) (*Rows, error) {
+	conn, err := ConnectConfig(ctx, config, &ConnHook{
+		Query: func(invocation *ConnQuery, ctx context.Context, query string, args ...interface{}) (*Rows, error) {
 			called = true
-			return original(ctx, query, args...)
+			return invocation.Proceed(ctx, query, args...)
 		},
 	})
 	if err != nil {
@@ -493,14 +494,14 @@ func TestCopyFromConn(t *testing.T) {
 	calledPing := false
 	calledCP := false
 	ctx := context.Background()
-	conn, err := ConnectConfig(ctx, config, &Hook{
-		Ping: func(original func(ctx context.Context) error, ctx context.Context) error {
+	conn, err := ConnectConfig(ctx, config, &ConnHook{
+		Ping: func(invocation *ConnPing, ctx context.Context) error {
 			calledPing = true
-			return original(ctx)
+			return invocation.Proceed(ctx)
 		},
-		CopyFrom: func(original func(ctx context.Context, tableName Identifier, rowSrc interface{}) (int64, error), ctx context.Context, tableName Identifier, rowSrc interface{}) (int64, error) {
+		CopyFrom: func(invocation *ConnCopyFrom, ctx context.Context, tableName Identifier, rowSrc interface{}) (int64, error) {
 			calledCP = true
-			return original(ctx, tableName, data)
+			return invocation.Proceed(ctx, tableName, rowSrc)
 		},
 	})
 	if err != nil {

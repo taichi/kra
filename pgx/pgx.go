@@ -20,19 +20,9 @@ import (
 
 type Core struct {
 	*kra.Core
-	hook *Hook
+	hooks *HookHolster
 }
 
-func NewCore(db kra.DB, hook *Hook) *Core {
-	return &Core{kra.NewCore(db), NewHook(hook)}
-}
-
-func (core *Core) Analyze(query string, args ...interface{}) (rawQuery string, vars []interface{}, err error) {
-	if analyzer, err := core.hook.Parse(core.Parse, query); err != nil {
-		return "", nil, err
-	} else if resolver, err := core.hook.NewResolver(core.NewResolver, args...); err != nil {
-		return "", nil, err
-	} else {
-		return analyzer.Analyze(resolver)
-	}
+func NewCore(db kra.DB, hooks ...interface{}) *Core {
+	return &Core{kra.NewCore(db), NewHookHolster(hooks...)}
 }

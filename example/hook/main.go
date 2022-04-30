@@ -31,14 +31,15 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	db, err := pgx.OpenConfig(ctx, config, &pgx.Hook{
-		Parse: func(original func(query string) (kra.QueryAnalyzer, error), query string) (kra.QueryAnalyzer, error) {
+	db, err := pgx.OpenConfig(ctx, config, &kra.CoreHook{
+		Parse: func(invocation *kra.CoreParse, query string) (kra.QueryAnalyzer, error) {
 			fmt.Println("preParse:", query)
-			return original(query)
+			return invocation.Proceed(query)
 		},
-		Prepare: func(original func(ctx context.Context, query string, examples ...interface{}) (*pgx.Stmt, error), ctx context.Context, query string, examples ...interface{}) (*pgx.Stmt, error) {
+	}, &pgx.DBHook{
+		Prepare: func(invocation *pgx.DBPrepare, ctx context.Context, query string, examples ...interface{}) (*pgx.PooledStmt, error) {
 			fmt.Println("prepare:", query)
-			stmt, er2 := original(ctx, query, examples...)
+			stmt, er2 := invocation.Proceed(ctx, query, examples...)
 			fmt.Printf("postPrepare: %+v, %v \n", stmt.Stmt().SQL, er2)
 			return stmt, er2
 		},

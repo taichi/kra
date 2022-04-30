@@ -25,21 +25,21 @@ import (
 	"github.com/taichi/kra"
 )
 
-func Open(ctx context.Context, connString string) (*DB, error) {
+func Open(ctx context.Context, connString string, hooks ...interface{}) (*DB, error) {
 	config, err := pgxpool.ParseConfig(connString)
 	if err != nil {
 		return nil, err
 	}
-	return OpenConfig(ctx, config, nil)
+	return OpenConfig(ctx, config, hooks...)
 }
 
 type Identifier pgx.Identifier
 
-func OpenConfig(ctx context.Context, config *pgxpool.Config, hook *Hook) (*DB, error) {
+func OpenConfig(ctx context.Context, config *pgxpool.Config, hooks ...interface{}) (*DB, error) {
 	if pool, err := pgxpool.ConnectConfig(ctx, config); err != nil {
 		return nil, err
 	} else {
-		return NewDB(pool, NewCore(kra.PostgreSQL, hook)), nil
+		return NewDB(pool, NewCore(kra.PostgreSQL, hooks...)), nil
 	}
 }
 
@@ -49,19 +49,19 @@ type Conn struct {
 	count int64
 }
 
-func Connect(ctx context.Context, connString string) (*Conn, error) {
+func Connect(ctx context.Context, connString string, hooks ...interface{}) (*Conn, error) {
 	if config, err := pgx.ParseConfig(connString); err != nil {
 		return nil, err
 	} else {
-		return ConnectConfig(ctx, config, nil)
+		return ConnectConfig(ctx, config, hooks...)
 	}
 }
 
-func ConnectConfig(ctx context.Context, connConfig *pgx.ConnConfig, hook *Hook) (*Conn, error) {
+func ConnectConfig(ctx context.Context, connConfig *pgx.ConnConfig, hooks ...interface{}) (*Conn, error) {
 	if conn, err := pgx.ConnectConfig(ctx, connConfig); err != nil {
 		return nil, err
 	} else {
-		return NewConn(conn, NewCore(kra.PostgreSQL, hook)), nil
+		return NewConn(conn, NewCore(kra.PostgreSQL, hooks...)), nil
 	}
 }
 
@@ -74,9 +74,7 @@ func (conn *Conn) Conn() *pgx.Conn {
 }
 
 func (conn *Conn) Close(ctx context.Context) error {
-	return conn.core.hook.Conn.Close(func(c context.Context) error {
-		return conn.conn.Close(c)
-	}, ctx)
+	return NewConnClose(conn, conn.conn.Close).Proceed(ctx)
 }
 
 func (conn *Conn) Begin(ctx context.Context) (*Tx, error) {
@@ -88,62 +86,68 @@ func (conn *Conn) BeginFunc(ctx context.Context, f func(*Tx) error) error {
 }
 
 func (conn *Conn) BeginTx(ctx context.Context, txOptions pgx.TxOptions) (*Tx, error) {
-	return conn.core.hook.BeginTx(func(c context.Context, o pgx.TxOptions) (*Tx, error) {
+	return NewConnBeginTx(conn, func(c context.Context, o pgx.TxOptions) (*Tx, error) {
 		if tx, err := conn.conn.BeginTx(c, o); err != nil {
 			return nil, err
 		} else {
 			return &Tx{tx, conn.conn, conn.core, &conn.count}, nil
 		}
-	}, ctx, txOptions)
+	}).Proceed(ctx, txOptions)
 }
 
 func (conn *Conn) BeginTxFunc(ctx context.Context, txOptions pgx.TxOptions, fn func(*Tx) error) error {
-	return conn.core.hook.BeginTxFunc(func(c context.Context, o pgx.TxOptions, f func(*Tx) error) error {
+	return NewConnBeginTxFunc(conn, func(c context.Context, o pgx.TxOptions, f func(*Tx) error) error {
 		return conn.conn.BeginTxFunc(c, o, func(tx pgx.Tx) error {
 			return f(&Tx{tx, conn.conn, conn.core, &conn.count})
 		})
-	}, ctx, txOptions, fn)
+	}).Proceed(ctx, txOptions, fn)
 }
 
 func (conn *Conn) CopyFrom(ctx context.Context, tableName Identifier, rowSrc interface{}) (int64, error) {
-	return doCopyFrom(conn.core, conn.conn.CopyFrom, ctx, tableName, rowSrc)
+	return NewConnCopyFrom(conn, func(c context.Context, i Identifier, rs interface{}) (int64, error) {
+		return doCopyFrom(conn.core, conn.conn.CopyFrom, c, i, rs)
+	}).Proceed(ctx, tableName, rowSrc)
 }
 
 func (conn *Conn) Exec(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
-	return doExec(conn.core, conn.conn.Exec, ctx, query, args...)
+	return NewConnExec(conn, func(c context.Context, q string, a ...interface{}) (pgconn.CommandTag, error) {
+		return doExec(conn.core, conn.conn.Exec, c, q, a...)
+	}).Proceed(ctx, query, args...)
 }
 
 func (conn *Conn) Ping(ctx context.Context) error {
-	return conn.core.hook.Ping(conn.conn.Ping, ctx)
+	return NewConnPing(conn, conn.conn.Ping).Proceed(ctx)
 }
 
 func (conn *Conn) Prepare(ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
-	return doPrepare(conn.core, conn.conn, &conn.count, conn.conn.Prepare, ctx, query, examples...)
+	return NewConnPrepare(conn, func(c context.Context, q string, e ...interface{}) (*Stmt, error) {
+		return doPrepare(conn.core, conn.conn, &conn.count, conn.conn.Prepare, c, q, e...)
+	}).Proceed(ctx, query, examples...)
 }
 
 func (conn *Conn) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
-	return conn.core.hook.Query(func(c context.Context, q string, a ...interface{}) (*Rows, error) {
+	return NewConnQuery(conn, func(c context.Context, q string, a ...interface{}) (*Rows, error) {
 		return doQuery(conn.core, conn.conn.Query, c, q, a...)
-	}, ctx, query, args...)
+	}).Proceed(ctx, query, args...)
 }
 
 func (conn *Conn) SendBatch(ctx context.Context, batch *Batch) *BatchResults {
-	return conn.core.hook.SendBatch(func(c context.Context, b *Batch) *BatchResults {
+	return NewConnSendBatch(conn, func(c context.Context, b *Batch) *BatchResults {
 		results := conn.conn.SendBatch(c, b.batch)
 		return &BatchResults{results, conn.core}
-	}, ctx, batch)
+	}).Proceed(ctx, batch)
 }
 
 func (conn *Conn) Find(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return conn.core.hook.Find(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+	return NewConnFind(conn, func(c context.Context, d interface{}, q string, a ...interface{}) error {
 		return doFind(conn.core, conn.conn.Query, c, d, q, a...)
-	}, ctx, dest, query, args...)
+	}).Proceed(ctx, dest, query, args...)
 }
 
 func (conn *Conn) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return conn.core.hook.FindAll(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+	return NewConnFindAll(conn, func(c context.Context, d interface{}, q string, a ...interface{}) error {
 		return doFindAll(conn.core, conn.conn.Query, c, d, q, a...)
-	}, ctx, dest, query, args...)
+	}).Proceed(ctx, dest, query, args...)
 }
 
 type DB struct {
@@ -161,10 +165,10 @@ func (db *DB) Pool() *pgxpool.Pool {
 }
 
 func (db *DB) Close() error {
-	return db.core.hook.DB.Close(func() error {
+	return NewDBClose(db, func() error {
 		db.pool.Close()
 		return nil
-	})
+	}).Proceed()
 }
 
 func (db *DB) Begin(ctx context.Context) (*Tx, error) {
@@ -176,73 +180,79 @@ func (db *DB) BeginFunc(ctx context.Context, f func(*Tx) error) error {
 }
 
 func (db *DB) BeginTx(ctx context.Context, opts pgx.TxOptions) (*Tx, error) {
-	return db.core.hook.BeginTx(func(c context.Context, o pgx.TxOptions) (*Tx, error) {
+	return NewDBBeginTx(db, func(c context.Context, o pgx.TxOptions) (*Tx, error) {
 		if tx, err := db.pool.BeginTx(c, o); err != nil {
 			return nil, err
 		} else {
 			return &Tx{tx, tx.Conn(), db.core, &db.count}, nil
 		}
-	}, ctx, opts)
+	}).Proceed(ctx, opts)
 }
 
 func (db *DB) BeginTxFunc(ctx context.Context, txOptions pgx.TxOptions, fn func(*Tx) error) error {
-	return db.core.hook.BeginTxFunc(func(c context.Context, o pgx.TxOptions, f func(*Tx) error) error {
+	return NewDBBeginTxFunc(db, func(c context.Context, o pgx.TxOptions, f func(*Tx) error) error {
 		return db.pool.BeginTxFunc(c, o, func(tx pgx.Tx) error {
 			return f(&Tx{tx, tx.Conn(), db.core, &db.count})
 		})
-	}, ctx, txOptions, fn)
+	}).Proceed(ctx, txOptions, fn)
 }
 
 func (db *DB) Ping(ctx context.Context) error {
-	return db.core.hook.Ping(db.pool.Ping, ctx)
+	return NewDBPing(db, db.pool.Ping).Proceed(ctx)
 }
 
 func (db *DB) Exec(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
-	return doExec(db.core, db.pool.Exec, ctx, query, args...)
+	return NewDBExec(db, func(c context.Context, q string, a ...interface{}) (pgconn.CommandTag, error) {
+		return doExec(db.core, db.pool.Exec, c, q, a...)
+	}).Proceed(ctx, query, args...)
 }
 
 func (db *DB) CopyFrom(ctx context.Context, tableName Identifier, rowSrc interface{}) (int64, error) {
-	return doCopyFrom(db.core, db.pool.CopyFrom, ctx, tableName, rowSrc)
+	return NewDBCopyFrom(db, func(c context.Context, i Identifier, rs interface{}) (int64, error) {
+		return doCopyFrom(db.core, db.pool.CopyFrom, c, i, rs)
+	}).Proceed(ctx, tableName, rowSrc)
 }
 
 func (db *DB) SendBatch(ctx context.Context, batch *Batch) *BatchResults {
-	return db.core.hook.SendBatch(func(c context.Context, b *Batch) *BatchResults {
+	return NewDBSendBatch(db, func(c context.Context, b *Batch) *BatchResults {
 		results := db.pool.SendBatch(ctx, batch.batch)
 		return &BatchResults{results, db.core}
-	}, ctx, batch)
+	}).Proceed(ctx, batch)
 }
 
 func (db *DB) Prepare(ctx context.Context, query string, examples ...interface{}) (*PooledStmt, error) {
-	conn, err := db.pool.Acquire(ctx)
-	if err != nil {
-		return nil, err
-	}
+	return NewDBPrepare(db, func(c context.Context, q string, e ...interface{}) (*PooledStmt, error) {
+		conn, err := db.pool.Acquire(ctx)
+		if err != nil {
+			return nil, err
+		}
 
-	pooled := conn.Conn()
+		pooled := conn.Conn()
 
-	if stmt, err := doPrepare(db.core, pooled, &db.count, pooled.Prepare, ctx, query, examples...); err != nil {
-		return nil, err
-	} else {
-		return &PooledStmt{stmt, conn}, nil
-	}
+		if stmt, err := doPrepare(db.core, pooled, &db.count, pooled.Prepare, ctx, query, examples...); err != nil {
+			return nil, err
+		} else {
+			return &PooledStmt{stmt, conn}, nil
+		}
+	}).Proceed(ctx, query, examples...)
 }
 
 func (db *DB) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
-	return db.core.hook.Query(func(c context.Context, q string, a ...interface{}) (*Rows, error) {
+	return NewDBQuery(db, func(c context.Context, q string, a ...interface{}) (*Rows, error) {
 		return doQuery(db.core, db.pool.Query, c, q, a...)
-	}, ctx, query, args...)
+	}).Proceed(ctx, query, args...)
 }
 
 func (db *DB) Find(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return db.core.hook.Find(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+	return NewDBFind(db, func(c context.Context, d interface{}, q string, a ...interface{}) error {
 		return doFind(db.core, db.pool.Query, c, d, q, a...)
-	}, ctx, dest, query, args...)
+	}).Proceed(ctx, dest, query, args...)
 }
 
 func (db *DB) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return db.core.hook.FindAll(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+	return NewDBFindAll(db, func(c context.Context, d interface{}, q string, a ...interface{}) error {
 		return doFindAll(db.core, db.pool.Query, c, d, q, a...)
-	}, ctx, dest, query, args...)
+	}).Proceed(ctx, dest, query, args...)
 }
 
 type Tx struct {
@@ -257,66 +267,72 @@ func (tx *Tx) Tx() pgx.Tx {
 }
 
 func (tx *Tx) Begin(ctx context.Context) (*Tx, error) {
-	return tx.core.hook.Tx.Begin(func(c context.Context) (*Tx, error) {
+	return NewTxBegin(tx, func(c context.Context) (*Tx, error) {
 		if newone, err := tx.tx.Begin(c); err != nil {
 			return nil, err
 		} else {
 			return &Tx{newone, tx.conn, tx.core, tx.count}, nil
 		}
-	}, ctx)
+	}).Proceed(ctx)
 }
 
 func (tx *Tx) BeginFunc(ctx context.Context, fn func(*Tx) error) error {
-	return tx.core.hook.Tx.BeginFunc(func(c context.Context, f func(*Tx) error) error {
+	return NewTxBeginFunc(tx, func(c context.Context, f func(*Tx) error) error {
 		return tx.tx.BeginFunc(c, func(newone pgx.Tx) error {
 			return f(&Tx{newone, tx.conn, tx.core, tx.count})
 		})
-	}, ctx, fn)
+	}).Proceed(ctx, fn)
 }
 
 func (tx *Tx) Commit(ctx context.Context) error {
-	return tx.core.hook.Tx.Commit(tx.tx.Commit, ctx)
+	return NewTxCommit(tx, tx.tx.Commit).Proceed(ctx)
 }
 
 func (tx *Tx) Rollback(ctx context.Context) error {
-	return tx.core.hook.Tx.Rollback(tx.tx.Rollback, ctx)
+	return NewTxRollback(tx, tx.tx.Rollback).Proceed(ctx)
 }
 
 func (tx *Tx) CopyFrom(ctx context.Context, tableName Identifier, rowSrc interface{}) (int64, error) {
-	return doCopyFrom(tx.core, tx.tx.CopyFrom, ctx, tableName, rowSrc)
+	return NewTxCopyFrom(tx, func(c context.Context, i Identifier, rs interface{}) (int64, error) {
+		return doCopyFrom(tx.core, tx.tx.CopyFrom, c, i, rs)
+	}).Proceed(ctx, tableName, rowSrc)
 }
 
 func (tx *Tx) SendBatch(ctx context.Context, batch *Batch) *BatchResults {
-	return tx.core.hook.SendBatch(func(c context.Context, b *Batch) *BatchResults {
+	return NewTxSendBatch(tx, func(c context.Context, b *Batch) *BatchResults {
 		results := tx.tx.SendBatch(ctx, b.batch)
 		return &BatchResults{results, tx.core}
-	}, ctx, batch)
+	}).Proceed(ctx, batch)
 }
 
 func (tx *Tx) Prepare(ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
-	return doPrepare(tx.core, tx.conn, tx.count, tx.tx.Prepare, ctx, query, examples...)
+	return NewTxPrepare(tx, func(c context.Context, q string, e ...interface{}) (*Stmt, error) {
+		return doPrepare(tx.core, tx.conn, tx.count, tx.tx.Prepare, c, q, e...)
+	}).Proceed(ctx, query, examples...)
 }
 
 func (tx *Tx) Exec(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
-	return doExec(tx.core, tx.tx.Exec, ctx, query, args...)
+	return NewTxExec(tx, func(c context.Context, q string, a ...interface{}) (pgconn.CommandTag, error) {
+		return doExec(tx.core, tx.tx.Exec, c, q, a...)
+	}).Proceed(ctx, query, args...)
 }
 
 func (tx *Tx) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
-	return tx.core.hook.Query(func(c context.Context, q string, a ...interface{}) (*Rows, error) {
+	return NewTxQuery(tx, func(c context.Context, q string, a ...interface{}) (*Rows, error) {
 		return doQuery(tx.core, tx.tx.Query, c, q, a...)
-	}, ctx, query, args...)
+	}).Proceed(ctx, query, args...)
 }
 
 func (tx *Tx) Find(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return tx.core.hook.Find(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+	return NewTxFind(tx, func(c context.Context, d interface{}, q string, a ...interface{}) error {
 		return doFind(tx.core, tx.tx.Query, c, d, q, a...)
-	}, ctx, dest, query, args...)
+	}).Proceed(ctx, dest, query, args...)
 }
 
 func (tx *Tx) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return tx.core.hook.FindAll(func(c context.Context, d interface{}, q string, a ...interface{}) error {
+	return NewTxFindAll(tx, func(c context.Context, d interface{}, q string, a ...interface{}) error {
 		return doFindAll(tx.core, tx.tx.Query, c, d, q, a...)
-	}, ctx, dest, query, args...)
+	}).Proceed(ctx, dest, query, args...)
 }
 
 type Stmt struct {
@@ -333,15 +349,15 @@ func (stmt *Stmt) Stmt() *pgconn.StatementDescription {
 const smalltime = 5
 
 func (stmt *Stmt) Close(ctx context.Context) error {
-	return stmt.core.hook.Stmt.Close(func(c context.Context) error {
+	return NewStmtClose(stmt, func(c context.Context) error {
 		x, cancel := context.WithTimeout(c, time.Second*smalltime)
 		defer cancel()
 		return stmt.conn.Deallocate(x, stmt.stmt.Name)
-	}, ctx)
+	}).Proceed(ctx)
 }
 
 func (stmt *Stmt) Exec(ctx context.Context, args ...interface{}) (pgconn.CommandTag, error) {
-	return stmt.core.hook.Stmt.Exec(func(c context.Context, a ...interface{}) (pgconn.CommandTag, error) {
+	return NewStmtExec(stmt, func(c context.Context, a ...interface{}) (pgconn.CommandTag, error) {
 		if resolver, err := stmt.core.NewResolver(a...); err != nil {
 			return nil, err
 		} else if _, bindArgs, err := stmt.query.Analyze(resolver); err != nil {
@@ -349,11 +365,11 @@ func (stmt *Stmt) Exec(ctx context.Context, args ...interface{}) (pgconn.Command
 		} else {
 			return stmt.conn.Exec(c, stmt.stmt.Name, bindArgs...)
 		}
-	}, ctx, args...)
+	}).Proceed(ctx, args...)
 }
 
 func (stmt *Stmt) Query(ctx context.Context, args ...interface{}) (*Rows, error) {
-	return stmt.core.hook.Stmt.Query(func(c context.Context, a ...interface{}) (*Rows, error) {
+	return NewStmtQuery(stmt, func(c context.Context, a ...interface{}) (*Rows, error) {
 		if resolver, err := stmt.core.NewResolver(args...); err != nil {
 			return nil, err
 		} else if _, bindArgs, err := stmt.query.Analyze(resolver); err != nil {
@@ -365,7 +381,7 @@ func (stmt *Stmt) Query(ctx context.Context, args ...interface{}) (*Rows, error)
 		} else {
 			return NewRows(stmt.core, rows), nil
 		}
-	}, ctx, args)
+	}).Proceed(ctx, args)
 }
 
 type PooledStmt struct {
@@ -397,15 +413,15 @@ type Rows struct {
 }
 
 func NewRows(core *Core, rows pgx.Rows) *Rows {
-	return &Rows{&rowsAdapter{rows}, core, core.hook.NewTransformer(core.NewTransformer)}
+	return &Rows{&rowsAdapter{rows}, core, kra.NewCoreNewTransformer(core.Core, core.hooks.Core).Proceed()}
 }
 
 func (rows *Rows) Next() bool {
-	return rows.core.hook.Rows.Next(rows.rows.Next)
+	return NewRowsNext(rows, rows.rows.Next).Proceed()
 }
 
 func (rows *Rows) Err() error {
-	return rows.core.hook.Rows.Err(rows.rows.Err)
+	return NewRowsErr(rows, rows.rows.Err).Proceed()
 }
 
 func (rows *Rows) Rows() pgx.Rows {
@@ -413,16 +429,16 @@ func (rows *Rows) Rows() pgx.Rows {
 }
 
 func (rows *Rows) Close() error {
-	return rows.core.hook.Rows.Close(func() error {
+	return NewRowsClose(rows, func() error {
 		rows.rows.Close()
 		return rows.rows.Err()
-	})
+	}).Proceed()
 }
 
 func (rows *Rows) Scan(dest interface{}) error {
-	return rows.core.hook.Rows.Scan(func(d interface{}) error {
+	return NewRowsScan(rows, func(d interface{}) error {
 		return rows.transformer.Transform(rows.rows, d)
-	}, dest)
+	}).Proceed(dest)
 }
 
 type rowsAdapter struct {
@@ -452,14 +468,14 @@ func (batch *Batch) Batch() *pgx.Batch {
 }
 
 func (batch *Batch) Queue(query string, args ...interface{}) error {
-	return batch.core.hook.Batch.Queue(func(q string, a ...interface{}) error {
-		if rawQuery, bindArgs, err := batch.core.Analyze(q, a...); err != nil {
+	return NewBatchQueue(batch, func(q string, a ...interface{}) error {
+		if rawQuery, bindArgs, err := batch.core.Analyze(batch.core.hooks.Core, q, a...); err != nil {
 			return err
 		} else {
 			batch.batch.Queue(rawQuery, bindArgs...)
 			return nil
 		}
-	}, query, args...)
+	}).Proceed(query, args...)
 }
 
 type BatchResults struct {
@@ -472,19 +488,19 @@ func (batchResults *BatchResults) BatchResults() pgx.BatchResults {
 }
 
 func (batchResults *BatchResults) Close() error {
-	return batchResults.batchResults.Close()
+	return NewBatchResultsClose(batchResults, batchResults.batchResults.Close).Proceed()
 }
 
 func (batchResults *BatchResults) Exec() (pgconn.CommandTag, error) {
-	return batchResults.core.hook.BatchResults.Exec(batchResults.batchResults.Exec)
+	return NewBatchResultsExec(batchResults, batchResults.batchResults.Exec).Proceed()
 }
 
 func (batchResults *BatchResults) Query() (*Rows, error) {
-	return batchResults.core.hook.BatchResults.Query(func() (*Rows, error) {
+	return NewBatchResultsQuery(batchResults, func() (*Rows, error) {
 		if rows, err := batchResults.batchResults.Query(); err != nil {
 			return nil, err
 		} else {
 			return NewRows(batchResults.core, rows), nil
 		}
-	})
+	}).Proceed()
 }

@@ -30,35 +30,30 @@ import (
 type execFn func(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
 
 func doExec(core *Core, exec execFn, ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
-	return core.hook.Exec(func(c context.Context, q string, a ...interface{}) (pgconn.CommandTag, error) {
-		if rawQuery, bindArgs, err := core.Analyze(q, a...); err != nil {
-			return nil, err
-		} else {
-			return exec(c, rawQuery, bindArgs...)
-		}
-	}, ctx, query, args...)
+	if rawQuery, bindArgs, err := core.Analyze(core.hooks.Core, query, args...); err != nil {
+		return nil, err
+	} else {
+		return exec(ctx, rawQuery, bindArgs...)
+	}
 }
 
 type prepareFn func(ctx context.Context, name, query string) (sd *pgconn.StatementDescription, err error)
 
 func doPrepare(core *Core, conn *pgx.Conn, count *int64, prepare prepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
 	atomic.AddInt64(count, 1)
-	return core.hook.Prepare(func(c context.Context, q string, e ...interface{}) (*Stmt, error) {
-		if query, err := core.hook.Parse(core.Parse, q); err != nil {
-			return nil, err
-		} else if resolver, err := core.hook.NewResolver(core.NewResolver, e...); err != nil {
-			return nil, err
-		} else if err := query.Verify(resolver); err != nil {
-			return nil, err
-		} else if rawQuery, _, err := query.Analyze(kra.KeepSilent(resolver)); err != nil {
-			return nil, err
-		} else if stmt, err := prepare(c, toName(*count), rawQuery); err != nil {
-			return nil, err
-		} else {
-			return &Stmt{stmt, conn, core, query}, nil
-		}
-	}, ctx, query, examples...)
-
+	if query, err := core.Parse(query); err != nil {
+		return nil, err
+	} else if resolver, err := core.NewResolver(examples...); err != nil {
+		return nil, err
+	} else if err := query.Verify(resolver); err != nil {
+		return nil, err
+	} else if rawQuery, _, err := query.Analyze(kra.KeepSilent(resolver)); err != nil {
+		return nil, err
+	} else if stmt, err := prepare(ctx, toName(*count), rawQuery); err != nil {
+		return nil, err
+	} else {
+		return &Stmt{stmt, conn, core, query}, nil
+	}
 }
 
 func toName(count int64) string {
@@ -68,7 +63,7 @@ func toName(count int64) string {
 type queryFn func(ctx context.Context, query string, args ...interface{}) (pgx.Rows, error)
 
 func doQuery(core *Core, query queryFn, ctx context.Context, queryString string, args ...interface{}) (*Rows, error) {
-	if rawQuery, bindArgs, err := core.Analyze(queryString, args...); err != nil {
+	if rawQuery, bindArgs, err := core.Analyze(core.hooks.Core, queryString, args...); err != nil {
 		return nil, err
 	} else if rows, err := query(ctx, rawQuery, bindArgs...); err != nil {
 		return nil, err
@@ -130,50 +125,48 @@ func validateSrc(src interface{}) (*reflect.Value, int, error) {
 }
 
 func doCopyFrom(core *Core, copyFrom copyFromFn, ctx context.Context, tableName Identifier, src interface{}) (int64, error) {
-	return core.hook.CopyFrom(func(c context.Context, tn Identifier, s interface{}) (int64, error) {
-		dv, length, err := validateSrc(s)
-		if err != nil {
-			return 0, err
-		}
+	dv, length, err := validateSrc(src)
+	if err != nil {
+		return 0, err
+	}
 
-		directValue := *dv
+	directValue := *dv
 
-		var elementDef *kra.StructDef
-		var columnNames []string
-		var columnLength int
-		rowSrc := make([][]interface{}, length)
-		for index := 0; index < length; index++ {
-			element := reflect.Indirect(directValue.Index(index))
-			if element.Kind() != reflect.Struct {
-				return 0, fmt.Errorf("type=%v %w", element.Kind(), kra.ErrUnsupportedValueType)
-			} else if columnNames == nil {
-				elementType := element.Type()
-				if def, err := core.Repository.Lookup(elementType); err != nil {
-					return 0, err
-				} else {
-					elementDef = def
-				}
-				for col, def := range elementDef.Members {
-					if isCopyable(def) {
-						columnNames = append(columnNames, col)
-						columnLength++
-					}
+	var elementDef *kra.StructDef
+	var columnNames []string
+	var columnLength int
+	rowSrc := make([][]interface{}, length)
+	for index := 0; index < length; index++ {
+		element := reflect.Indirect(directValue.Index(index))
+		if element.Kind() != reflect.Struct {
+			return 0, fmt.Errorf("type=%v %w", element.Kind(), kra.ErrUnsupportedValueType)
+		} else if columnNames == nil {
+			elementType := element.Type()
+			if def, err := core.Repository.Lookup(elementType); err != nil {
+				return 0, err
+			} else {
+				elementDef = def
+			}
+			for col, def := range elementDef.Members {
+				if isCopyable(def) {
+					columnNames = append(columnNames, col)
+					columnLength++
 				}
 			}
-
-			values := make([]interface{}, columnLength)
-			for i, col := range columnNames {
-				if def, val, err := elementDef.ByName(element, col); err != nil {
-					return 0, err
-				} else if isCopyable(def) {
-					values[i] = val.Interface()
-				}
-			}
-			rowSrc[index] = values
 		}
 
-		return copyFrom(c, pgx.Identifier(tn), columnNames, pgx.CopyFromRows(rowSrc))
-	}, ctx, tableName, src)
+		values := make([]interface{}, columnLength)
+		for i, col := range columnNames {
+			if def, val, err := elementDef.ByName(element, col); err != nil {
+				return 0, err
+			} else if isCopyable(def) {
+				values[i] = val.Interface()
+			}
+		}
+		rowSrc[index] = values
+	}
+
+	return copyFrom(ctx, pgx.Identifier(tableName), columnNames, pgx.CopyFromRows(rowSrc))
 }
 
 func isCopyable(def *kra.FieldDef) bool {
