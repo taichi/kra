@@ -358,7 +358,7 @@ func (stmt *Stmt) Close(ctx context.Context) error {
 
 func (stmt *Stmt) Exec(ctx context.Context, args ...interface{}) (pgconn.CommandTag, error) {
 	return NewStmtExec(stmt, func(c context.Context, a ...interface{}) (pgconn.CommandTag, error) {
-		if resolver, err := stmt.core.NewResolver(a...); err != nil {
+		if resolver, err := kra.NewCoreNewResolver(stmt.core.Core, stmt.core.hooks.Core).Proceed(a...); err != nil {
 			return nil, err
 		} else if _, bindArgs, err := stmt.query.Analyze(resolver); err != nil {
 			return nil, err
@@ -370,7 +370,7 @@ func (stmt *Stmt) Exec(ctx context.Context, args ...interface{}) (pgconn.Command
 
 func (stmt *Stmt) Query(ctx context.Context, args ...interface{}) (*Rows, error) {
 	return NewStmtQuery(stmt, func(c context.Context, a ...interface{}) (*Rows, error) {
-		if resolver, err := stmt.core.NewResolver(args...); err != nil {
+		if resolver, err := kra.NewCoreNewResolver(stmt.core.Core, stmt.core.hooks.Core).Proceed(a...); err != nil {
 			return nil, err
 		} else if _, bindArgs, err := stmt.query.Analyze(resolver); err != nil {
 			return nil, err

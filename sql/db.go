@@ -230,7 +230,7 @@ func (stmt *Stmt) Close() error {
 
 func (stmt *Stmt) Exec(ctx context.Context, args ...interface{}) (sql.Result, error) {
 	return NewStmtExec(stmt, func(c context.Context, a ...interface{}) (sql.Result, error) {
-		if resolver, err := stmt.core.NewResolver(a...); err != nil {
+		if resolver, err := kra.NewCoreNewResolver(stmt.core.Core, stmt.core.hooks.Core).Proceed(a...); err != nil {
 			return nil, err
 		} else if _, bindArgs, err := stmt.query.Analyze(resolver); err != nil {
 			return nil, err
@@ -242,7 +242,7 @@ func (stmt *Stmt) Exec(ctx context.Context, args ...interface{}) (sql.Result, er
 
 func (stmt *Stmt) Query(ctx context.Context, args ...interface{}) (*Rows, error) {
 	return NewStmtQuery(stmt, func(c context.Context, a ...interface{}) (*Rows, error) {
-		if resolver, err := stmt.core.NewResolver(a...); err != nil {
+		if resolver, err := kra.NewCoreNewResolver(stmt.core.Core, stmt.core.hooks.Core).Proceed(a...); err != nil {
 			return nil, err
 		} else if _, bindArgs, err := stmt.query.Analyze(resolver); err != nil {
 			return nil, err

@@ -41,9 +41,9 @@ type prepareFn func(ctx context.Context, name, query string) (sd *pgconn.Stateme
 
 func doPrepare(core *Core, conn *pgx.Conn, count *int64, prepare prepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
 	atomic.AddInt64(count, 1)
-	if query, err := core.Parse(query); err != nil {
+	if query, err := kra.NewCoreParse(core.Core, core.hooks.Core).Proceed(query); err != nil {
 		return nil, err
-	} else if resolver, err := core.NewResolver(examples...); err != nil {
+	} else if resolver, err := kra.NewCoreNewResolver(core.Core, core.hooks.Core).Proceed(examples...); err != nil {
 		return nil, err
 	} else if err := query.Verify(resolver); err != nil {
 		return nil, err
