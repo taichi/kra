@@ -381,7 +381,7 @@ func (stmt *Stmt) Query(ctx context.Context, args ...interface{}) (*Rows, error)
 		} else {
 			return NewRows(stmt.core, rows), nil
 		}
-	}).Proceed(ctx, args)
+	}).Proceed(ctx, args...)
 }
 
 type PooledStmt struct {
