@@ -113,6 +113,9 @@ issues:
     - linters:
         - stylecheck
       text: "ID"
+    - path: hook_*\.go
+      linters:
+        - dupl
     - path: _test\.go
       linters:
         - gomnd
