@@ -27,29 +27,48 @@ type HookHolster struct {
 	Rows []*RowsHook
 }
 
-func NewHookHolster(hooks ...kra.Hook) *HookHolster {
+func NewHookHolster(hooks ...interface{}) *HookHolster {
 	holster := new(HookHolster)
 	for _, hook := range hooks {
 		if hook == nil {
 			continue
 		}
-		hook.Fill()
 		switch h := hook.(type) {
 		case *kra.CoreHook:
 			holster.Core = append(holster.Core, h)
+		case kra.CoreHook:
+			holster.Core = append(holster.Core, &h)
 		case *ConnHook:
 			holster.Conn = append(holster.Conn, h)
+		case ConnHook:
+			holster.Conn = append(holster.Conn, &h)
 		case *DBHook:
 			holster.DB = append(holster.DB, h)
+		case DBHook:
+			holster.DB = append(holster.DB, &h)
 		case *TxHook:
 			holster.Tx = append(holster.Tx, h)
+		case TxHook:
+			holster.Tx = append(holster.Tx, &h)
 		case *StmtHook:
 			holster.Stmt = append(holster.Stmt, h)
+		case StmtHook:
+			holster.Stmt = append(holster.Stmt, &h)
 		case *RowsHook:
 			holster.Rows = append(holster.Rows, h)
+		case RowsHook:
+			holster.Rows = append(holster.Rows, &h)
 		default:
 			// do nothing
 		}
 	}
 	return holster
+}
+
+type invocation[RECV, H, FN any] struct {
+	Receiver *RECV
+	hooks    []*H
+	length   int
+	index    int
+	original FN
 }

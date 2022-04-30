@@ -21,6 +21,6 @@ type Core struct {
 	hooks *HookHolster
 }
 
-func NewCore(db kra.DB, hooks ...kra.Hook) *Core {
+func NewCore(db kra.DB, hooks ...interface{}) *Core {
 	return &Core{kra.NewCore(db), NewHookHolster(hooks...)}
 }

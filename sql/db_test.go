@@ -45,7 +45,7 @@ type fixture struct {
 	TestValue string `db:"test_value"`
 }
 
-func setup(t *testing.T, hooks ...kra.Hook) (*TestTable, error) {
+func setup(t *testing.T, hooks ...interface{}) (*TestTable, error) {
 	core := NewCore(kra.PostgreSQL, hooks...)
 
 	table := newTestTable()
@@ -381,8 +381,8 @@ func TestPrepare_Exec(t *testing.T) {
 
 func TestQueryConn(t *testing.T) {
 	called := false
-	table, err := setup(t, &DBHook{
-		Query: func(invocation *DBQuery, ctx context.Context, query string, args ...interface{}) (*Rows, error) {
+	table, err := setup(t, &ConnHook{
+		Query: func(invocation *ConnQuery, ctx context.Context, query string, args ...interface{}) (*Rows, error) {
 			called = true
 			return invocation.Proceed(ctx, query, args...)
 		},
