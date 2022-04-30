@@ -17,12 +17,32 @@ package main
 import (
 	"context"
 	"fmt"
+	"runtime"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 
 	"github.com/taichi/kra"
 	"github.com/taichi/kra/pgx"
 )
+
+type TraceQA struct {
+	delegate kra.QueryAnalyzer
+}
+
+func (qa *TraceQA) Verify(vr kra.ValueResolver) error {
+	return qa.delegate.Verify(vr)
+}
+
+var BUFFER_SIZE = 4
+var MAIN = 7
+
+func (qa *TraceQA) Analyze(vr kra.ValueResolver) (query string, vars []interface{}, err error) {
+	q, v, e := qa.delegate.Analyze(vr)
+	frame := kra.FindCaller(MAIN, BUFFER_SIZE, func(frame *runtime.Frame) (found bool) {
+		return kra.ToPackageName(frame.Function) == "main"
+	})
+	return fmt.Sprintf("/* %s:%d */%s", frame.File, frame.Line, q), v, e
+}
 
 func main() {
 	ctx := context.Background()
@@ -33,8 +53,11 @@ func main() {
 	}
 	db, err := pgx.OpenConfig(ctx, config, &kra.CoreHook{
 		Parse: func(invocation *kra.CoreParse, query string) (kra.QueryAnalyzer, error) {
-			fmt.Println("preParse:", query)
-			return invocation.Proceed(query)
+			if qa, er1 := invocation.Proceed(query); er1 != nil {
+				return nil, er1
+			} else {
+				return &TraceQA{qa}, nil
+			}
 		},
 	}, &pgx.DBHook{
 		Prepare: func(invocation *pgx.DBPrepare, ctx context.Context, query string, examples ...interface{}) (*pgx.PooledStmt, error) {
