@@ -52,6 +52,16 @@ type Core struct {
 	Repository     *TypeRepository
 }
 
+func (core *Core) Analyze(hooks []*CoreHook, query string, args ...interface{}) (rawQuery string, vars []interface{}, err error) {
+	if analyzer, err := NewCoreParse(core, hooks).Proceed(query); err != nil {
+		return "", nil, err
+	} else if resolver, err := NewCoreNewResolver(core, hooks).Proceed(args...); err != nil {
+		return "", nil, err
+	} else {
+		return analyzer.Analyze(resolver)
+	}
+}
+
 var ErrLackOfQueryParameters = errors.New("kra: require example parameters for prepare query with IN operator")
 var ErrNoRecord = errors.New("kra: no record")
 

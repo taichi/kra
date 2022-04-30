@@ -17,6 +17,7 @@ package sql
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"fmt"
 	"testing"
 	"time"
@@ -44,9 +45,8 @@ type fixture struct {
 	TestValue string `db:"test_value"`
 }
 
-func setup(t *testing.T) (*TestTable, error) {
-
-	core := kra.NewCore(kra.PostgreSQL)
+func setup(t *testing.T, hooks ...interface{}) (*TestTable, error) {
+	core := NewCore(kra.PostgreSQL, hooks...)
 
 	table := newTestTable()
 
@@ -120,8 +120,13 @@ func insertData(t *testing.T, table *TestTable) error {
 }
 
 func TestExec(t *testing.T) {
-
-	table, err := setup(t)
+	called := false
+	table, err := setup(t, &DBHook{
+		Exec: func(invocation *DBExec, ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+			called = true
+			return invocation.Proceed(ctx, query, args...)
+		},
+	})
 	if err != nil {
 		t.Error(err)
 		return
@@ -135,6 +140,40 @@ func TestExec(t *testing.T) {
 		return
 	} else {
 		assert.Equal(t, int64(1), count)
+		assert.True(t, called)
+	}
+}
+
+func TestExecConn(t *testing.T) {
+	called := false
+	table, err := setup(t, &ConnHook{
+		Exec: func(invocation *ConnExec, ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+			called = true
+			return invocation.Proceed(ctx, query, args...)
+		},
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	ctx := context.Background()
+	conn, err := table.db.Conn(ctx)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer conn.Close()
+
+	if res, err := conn.Exec(ctx, table.insert, &fixture{"111", "bbbb"}); err != nil {
+		t.Error(err)
+		return
+	} else if count, err := res.RowsAffected(); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, int64(1), count)
+		assert.True(t, called)
 	}
 }
 
@@ -171,13 +210,75 @@ func TestFind(t *testing.T) {
 	assert.Equal(t, 3, count)
 }
 
-func TestFindAll(t *testing.T) {
-	table, err := setup(t)
+func TestFindConn(t *testing.T) {
+	calledParse := false
+	calledRes := false
+	calledTra := false
+	called := false
+	table, err := setup(t,
+		&kra.CoreHook{
+			Parse: func(invocation *kra.CoreParse, query string) (kra.QueryAnalyzer, error) {
+				calledParse = true
+				return invocation.Proceed(query)
+			},
+			NewResolver: func(invocation *kra.CoreNewResolver, args ...interface{}) (kra.ValueResolver, error) {
+				calledRes = true
+				return invocation.Proceed(args...)
+			},
+			NewTransformer: func(invocation *kra.CoreNewTransformer) kra.Transformer {
+				calledTra = true
+				return invocation.Proceed()
+			},
+		},
+		&ConnHook{
+			Find: func(invocation *ConnFind, ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+				called = true
+				return invocation.Proceed(ctx, dest, query, args...)
+			},
+		})
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	if err := insertData(t, table); err != nil {
+	err = insertData(t, table)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	conn, err := table.db.Conn(context.Background())
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer conn.Close()
+
+	var dst fixture
+	if err := conn.Find(context.Background(), &dst, table.find, "222"); err != nil {
+		t.Error(err)
+		return
+	}
+	assert.Equal(t, "bbbb", dst.TestValue)
+	assert.True(t, calledParse)
+	assert.True(t, calledRes)
+	assert.True(t, calledTra)
+	assert.True(t, called)
+}
+
+func TestFindAll(t *testing.T) {
+	called := false
+	table, err := setup(t, &DBHook{
+		FindAll: func(invocation *DBFindAll, ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+			called = true
+			return invocation.Proceed(ctx, dest, query, args...)
+		},
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	err = insertData(t, table)
+	if err != nil {
 		t.Error(err)
 		return
 	}
@@ -190,6 +291,43 @@ func TestFindAll(t *testing.T) {
 
 	assert.Equal(t, 3, len(dstAry))
 	assert.Equal(t, "111", dstAry[0].TestKey)
+	assert.True(t, called)
+}
+
+func TestFindAllConn(t *testing.T) {
+	called := false
+	table, err := setup(t, &ConnHook{
+		FindAll: func(invocation *ConnFindAll, ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+			called = true
+			return invocation.Proceed(ctx, dest, query, args...)
+		},
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	err = insertData(t, table)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	conn, err := table.db.Conn(context.Background())
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer conn.Close()
+
+	var dstAry []*fixture
+	if err := conn.FindAll(context.Background(), &dstAry, table.findAll); err != nil {
+		t.Error(err)
+		return
+	}
+
+	assert.Equal(t, 3, len(dstAry))
+	assert.Equal(t, "111", dstAry[0].TestKey)
+	assert.True(t, called)
 }
 
 func TestFindAllMap(t *testing.T) {
@@ -241,6 +379,49 @@ func TestPrepare_Exec(t *testing.T) {
 	}
 }
 
+func TestQueryConn(t *testing.T) {
+	called := false
+	table, err := setup(t, &ConnHook{
+		Query: func(invocation *ConnQuery, ctx context.Context, query string, args ...interface{}) (*Rows, error) {
+			called = true
+			return invocation.Proceed(ctx, query, args...)
+		},
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = insertData(t, table)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	ctx := context.Background()
+	conn, err := table.db.Conn(ctx)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if rows, err := conn.Query(ctx, table.find, "111"); err != nil {
+		t.Error(err)
+		return
+	} else if rows.rows.Next() == false {
+		t.Fail()
+	} else {
+		var data fixture
+		sErr := rows.Scan(&data)
+		if sErr != nil {
+			t.Error(sErr)
+			return
+		}
+		assert.Equal(t, "aa", data.TestValue)
+		assert.True(t, called)
+	}
+}
+
 func TestPrepare_Query(t *testing.T) {
 	table, err := setup(t)
 	if err != nil {
@@ -277,5 +458,76 @@ func TestPrepare_Query(t *testing.T) {
 			return
 		}
 		assert.Equal(t, "aa", data.TestValue)
+	}
+}
+
+func TestTx(t *testing.T) {
+	calledBegin := false
+	calledCommit := false
+	table, err := setup(t, &DBHook{
+		BeginTx: func(invocation *DBBeginTx, ctx context.Context, txOptions *sql.TxOptions) (*Tx, error) {
+			calledBegin = true
+			return invocation.Proceed(ctx, txOptions)
+		},
+	}, &TxHook{
+		Commit: func(invocation *TxCommit) error {
+			calledCommit = true
+			return invocation.Proceed()
+		},
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	ctx := context.Background()
+	if tx, err := table.db.Begin(ctx); err != nil {
+		t.Error(err)
+	} else if res, err := tx.Exec(ctx, table.insert, &fixture{"111", "aa"}); err != nil {
+		t.Error(err)
+	} else if err := tx.Commit(); err != nil {
+		t.Error(err)
+	} else if count, err := res.RowsAffected(); err != nil {
+		t.Error(err)
+	} else {
+		assert.Equal(t, int64(1), count)
+		assert.True(t, calledBegin)
+		assert.True(t, calledCommit)
+	}
+}
+
+func TestTx_Rollback(t *testing.T) {
+	calledBegin := false
+	calledRollback := false
+	table, err := setup(t, &DBHook{
+		BeginTx: func(invocation *DBBeginTx, ctx context.Context, txOptions *sql.TxOptions) (*Tx, error) {
+			calledBegin = true
+			return invocation.Proceed(ctx, txOptions)
+		},
+	}, &TxHook{
+		Rollback: func(invocation *TxRollback) error {
+			calledRollback = true
+			return invocation.Proceed()
+		},
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	var count int
+	ctx := context.Background()
+	if tx, err := table.db.Begin(ctx); err != nil {
+		t.Error(err)
+	} else if _, err := tx.Exec(ctx, table.insert, &fixture{"111", "aa"}); err != nil {
+		t.Error(err)
+	} else if err := tx.Rollback(); err != nil {
+		t.Error(err)
+	} else if err := table.db.Find(ctx, &count, table.count); err != nil {
+		t.Error(err)
+	} else {
+		assert.Equal(t, 0, count)
+		assert.True(t, calledBegin)
+		assert.True(t, calledRollback)
 	}
 }

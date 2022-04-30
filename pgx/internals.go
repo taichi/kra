@@ -29,8 +29,8 @@ import (
 
 type execFn func(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
 
-func doExec(core *kra.Core, exec execFn, ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
-	if rawQuery, bindArgs, err := core.Analyze(query, args...); err != nil {
+func doExec(core *Core, exec execFn, ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
+	if rawQuery, bindArgs, err := core.Analyze(core.hooks.Core, query, args...); err != nil {
 		return nil, err
 	} else {
 		return exec(ctx, rawQuery, bindArgs...)
@@ -39,11 +39,11 @@ func doExec(core *kra.Core, exec execFn, ctx context.Context, query string, args
 
 type prepareFn func(ctx context.Context, name, query string) (sd *pgconn.StatementDescription, err error)
 
-func doPrepare(core *kra.Core, conn *pgx.Conn, count *int64, prepare prepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
+func doPrepare(core *Core, conn *pgx.Conn, count *int64, prepare prepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
 	atomic.AddInt64(count, 1)
-	if query, err := core.Parse(query); err != nil {
+	if query, err := kra.NewCoreParse(core.Core, core.hooks.Core).Proceed(query); err != nil {
 		return nil, err
-	} else if resolver, err := core.NewResolver(examples...); err != nil {
+	} else if resolver, err := kra.NewCoreNewResolver(core.Core, core.hooks.Core).Proceed(examples...); err != nil {
 		return nil, err
 	} else if err := query.Verify(resolver); err != nil {
 		return nil, err
@@ -62,8 +62,8 @@ func toName(count int64) string {
 
 type queryFn func(ctx context.Context, query string, args ...interface{}) (pgx.Rows, error)
 
-func doQuery(core *kra.Core, query queryFn, ctx context.Context, queryString string, args ...interface{}) (*Rows, error) {
-	if rawQuery, bindArgs, err := core.Analyze(queryString, args...); err != nil {
+func doQuery(core *Core, query queryFn, ctx context.Context, queryString string, args ...interface{}) (*Rows, error) {
+	if rawQuery, bindArgs, err := core.Analyze(core.hooks.Core, queryString, args...); err != nil {
 		return nil, err
 	} else if rows, err := query(ctx, rawQuery, bindArgs...); err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func doQuery(core *kra.Core, query queryFn, ctx context.Context, queryString str
 	}
 }
 
-func doFind(core *kra.Core, query queryFn, ctx context.Context, dst interface{}, queryString string, args ...interface{}) error {
+func doFind(core *Core, query queryFn, ctx context.Context, dst interface{}, queryString string, args ...interface{}) error {
 	if rows, err := doQuery(core, query, ctx, queryString, args...); err != nil {
 		return err
 	} else {
@@ -88,7 +88,7 @@ func doFind(core *kra.Core, query queryFn, ctx context.Context, dst interface{},
 	return nil
 }
 
-func doFindAll(core *kra.Core, query queryFn, ctx context.Context, dst interface{}, queryString string, args ...interface{}) error {
+func doFindAll(core *Core, query queryFn, ctx context.Context, dst interface{}, queryString string, args ...interface{}) error {
 	if rows, err := doQuery(core, query, ctx, queryString, args...); err != nil {
 		return err
 	} else {
@@ -106,21 +106,31 @@ var ErrEmptySlice = errors.New("kra: empty slice")
 
 var ErrCopyFromSource = errors.New("kra: cannot use pgx.CopyFromSource as src, use the underlying object")
 
-func doCopyFrom(core *kra.Core, copyFrom copyFromFn, ctx context.Context, tableName Identifier, src interface{}) (int64, error) {
+func validateSrc(src interface{}) (*reflect.Value, int, error) {
 	if _, ok := src.(pgx.CopyFromSource); ok {
-		return 0, ErrCopyFromSource
+		return nil, 0, ErrCopyFromSource
 	}
 
 	directValue := reflect.Indirect(reflect.ValueOf(src))
 
 	if directValue.Kind() != reflect.Slice {
-		return 0, fmt.Errorf("type=%v %w", directValue.Type(), kra.ErrNoSlice)
+		return nil, 0, fmt.Errorf("type=%v %w", directValue.Type(), kra.ErrNoSlice)
 	}
-
 	length := directValue.Len()
 	if length < 1 {
-		return 0, ErrEmptySlice
+		return nil, 0, ErrEmptySlice
 	}
+
+	return &directValue, length, nil
+}
+
+func doCopyFrom(core *Core, copyFrom copyFromFn, ctx context.Context, tableName Identifier, src interface{}) (int64, error) {
+	dv, length, err := validateSrc(src)
+	if err != nil {
+		return 0, err
+	}
+
+	directValue := *dv
 
 	var elementDef *kra.StructDef
 	var columnNames []string

@@ -23,8 +23,8 @@ import (
 
 type execFn func(context.Context, string, ...interface{}) (sql.Result, error)
 
-func doExec(core *kra.Core, exec execFn, ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-	if rawQuery, bindArgs, err := core.Analyze(query, args...); err != nil {
+func doExec(core *Core, exec execFn, ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	if rawQuery, bindArgs, err := core.Analyze(core.hooks.Core, query, args...); err != nil {
 		return nil, err
 	} else {
 		return exec(ctx, rawQuery, bindArgs...)
@@ -33,10 +33,10 @@ func doExec(core *kra.Core, exec execFn, ctx context.Context, query string, args
 
 type prepareFn func(context.Context, string) (*sql.Stmt, error)
 
-func doPrepare(core *kra.Core, prepare prepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
-	if query, err := core.Parse(query); err != nil {
+func doPrepare(core *Core, prepare prepareFn, ctx context.Context, query string, examples ...interface{}) (*Stmt, error) {
+	if query, err := kra.NewCoreParse(core.Core, core.hooks.Core).Proceed(query); err != nil {
 		return nil, err
-	} else if resolver, err := core.NewResolver(examples...); err != nil {
+	} else if resolver, err := kra.NewCoreNewResolver(core.Core, core.hooks.Core).Proceed(examples...); err != nil {
 		return nil, err
 	} else if err := query.Verify(resolver); err != nil {
 		return nil, err
@@ -51,19 +51,19 @@ func doPrepare(core *kra.Core, prepare prepareFn, ctx context.Context, query str
 
 type queryFn func(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
 
-func doQuery(core *kra.Core, query queryFn, ctx context.Context, queryString string, args ...interface{}) (*Rows, error) {
-	if rawQuery, bindArgs, err := core.Analyze(queryString, args...); err != nil {
+func doQuery(core *Core, query queryFn, ctx context.Context, queryString string, args ...interface{}) (*Rows, error) {
+	if rawQuery, bindArgs, err := core.Analyze(core.hooks.Core, queryString, args...); err != nil {
 		return nil, err
 	} else if rows, err := query(ctx, rawQuery, bindArgs...); err != nil {
 		return nil, err
 	} else if rows.Err() != nil {
 		return nil, rows.Err()
 	} else {
-		return &Rows{rows, core.NewTransformer()}, nil
+		return NewRows(core, rows), nil
 	}
 }
 
-func doFind(core *kra.Core, query queryFn, ctx context.Context, dest interface{}, queryString string, args ...interface{}) error {
+func doFind(core *Core, query queryFn, ctx context.Context, dest interface{}, queryString string, args ...interface{}) error {
 	if rows, err := doQuery(core, query, ctx, queryString, args...); err != nil {
 		return err
 	} else {
@@ -77,7 +77,7 @@ func doFind(core *kra.Core, query queryFn, ctx context.Context, dest interface{}
 	return nil
 }
 
-func doFindAll(core *kra.Core, query queryFn, ctx context.Context, dest interface{}, queryString string, args ...interface{}) error {
+func doFindAll(core *Core, query queryFn, ctx context.Context, dest interface{}, queryString string, args ...interface{}) error {
 	if rows, err := doQuery(core, query, ctx, queryString, args...); err != nil {
 		return err
 	} else {

@@ -41,7 +41,6 @@ linters-settings: # 設定のデフォルト値は、https://github.com/golangci
 linters:
   disable-all: true # 適用するものを明示的に列挙するため、デフォルトのルールを全て無効化。
   enable:
-    - bodyclose # https://github.com/timakin/bodyclose http.ResponseのCloseが呼び出されているかどうかを検査する。go vetのhttpresponseは、errチェックの後にCloseを呼んでいるかを検査する。
     - depguard # https://github.com/OpenPeeDeeP/depguard
     - dogsled # https://github.com/alexkohler/dogsled 空白識別子（_）を複数使っているものを検出するルール
     - dupl # https://github.com/mibk/dupl コードのコピペを検出するルール
@@ -57,21 +56,23 @@ linters:
     - goimports # https://godoc.org/golang.org/x/tools/cmd/goimports go標準のimport文を並べ替える処理。未使用のimport文は削除してしまう。VS Codeではgoreturnsを使うことでimport文の自動補完を行うこと。尚、goreturnsは内部でgoimportsを使ってるため、結果に差分が発生することはない。
     - gomnd # https://github.com/tommy-muehle/go-mnd
     - gosec # https://github.com/securego/gosec 脆弱性になりうるコードを検出するルール
-    - gosimple # https://github.com/dominikh/go-tools/tree/master/simple より単純な表記法のあるコードを検出するルール
     - govet # go標準のlintツール 処理内容の確認は、https://github.com/golang/go/blob/master/src/cmd/vet/main.go
     - ineffassign # https://github.com/gordonklaus/ineffassign 無効な代入を検出するルール
     - misspell # https://github.com/client9/misspell
     - nakedret # https://github.com/alexkohler/nakedret 大きな関数（デフォルト値は30行）において Named Result Parameters を使っている場合エラーにするルール。https://github.com/golang/go/wiki/CodeReviewComments#named-result-parameters
-    - noctx # https://github.com/sonatard/noctx net/httpのモジュールを使う際にContextを渡していないものを検出するルール
     - nolintlint # https://github.com/golangci/golangci-lint/tree/master/pkg/golinters/nolintlint
-    - rowserrcheck # https://github.com/jingyugao/rowserrcheck database/sql.Rows の rows.Err()をエラーチェックしているか検査するルール
-    - staticcheck # https://staticcheck.io/ デファクトスタンダードな静的検査ツール
-    - structcheck # https://gitlab.com/opennota/check 未使用の構造体メンバを検出するルール
-    - stylecheck # https://github.com/dominikh/go-tools/tree/master/stylecheck golintの再実装版。コード内にしかドキュメントが無い。
     - typecheck # goコンパイラと同等の型チェックを実施するルール
     - unconvert # https://github.com/mdempsky/unconvert 不必要な型チェックを検出するルール
-    - unparam # https://github.com/mvdan/unparam 関数の引数のうち使われていないものを検出するルール
-    - unused # https://github.com/dominikh/go-tools/tree/master/unused 使われていない定数、変数、関数、型を検出するルール
+  # go1.18 対応待ち https://github.com/golangci/golangci-lint/issues/2649
+  # - bodyclose # https://github.com/timakin/bodyclose http.ResponseのCloseが呼び出されているかどうかを検査する。go vetのhttpresponseは、errチェックの後にCloseを呼んでいるかを検査する。
+  # - gosimple # https://github.com/dominikh/go-tools/tree/master/simple より単純な表記法のあるコードを検出するルール
+  # - noctx # https://github.com/sonatard/noctx net/httpのモジュールを使う際にContextを渡していないものを検出するルール
+  # - rowserrcheck # https://github.com/jingyugao/rowserrcheck database/sql.Rows の rows.Err()をエラーチェックしているか検査するルール
+  # - staticcheck # https://staticcheck.io/ デファクトスタンダードな静的検査ツール
+  # - structcheck # https://gitlab.com/opennota/check 未使用の構造体メンバを検出するルール
+  # - stylecheck # https://github.com/dominikh/go-tools/tree/master/stylecheck golintの再実装版。コード内にしかドキュメントが無い。
+  # - unparam # https://github.com/mvdan/unparam 関数の引数のうち使われていないものを検出するルール
+  # - unused # https://github.com/dominikh/go-tools/tree/master/unused 使われていない定数、変数、関数、型を検出するルール
 
   # - asciicheck # https://github.com/tdakkota/asciicheck 識別子として非アスキー文字が使われているか検査するルール
   # - deadcode # https://github.com/remyoudompheng/go-misc/tree/master/deadcode 全くメンテナンスされていない。unused と go vet の unreachable を併せると似たような検査が行えるため無効化。

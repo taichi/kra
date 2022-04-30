@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgconn"
+	pgx "github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/taichi/kra"
@@ -44,11 +46,10 @@ type fixture struct {
 
 const connURL = "user=test password=test host=localhost port=5432 database=test sslmode=disable"
 
-func setup(t *testing.T) (*TestTable, error) {
-
+func setup(t *testing.T, hooks ...interface{}) (*TestTable, error) {
 	table := newTestTable()
 
-	rawDb, err := Open(context.Background(), connURL)
+	rawDb, err := Open(context.Background(), connURL, hooks...)
 	if err != nil {
 		return nil, err
 	}
@@ -116,8 +117,13 @@ func insertData(t *testing.T, table *TestTable) error {
 }
 
 func TestExec(t *testing.T) {
-
-	table, err := setup(t)
+	called := false
+	table, err := setup(t, DBHook{
+		Exec: func(invocation *DBExec, ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
+			called = true
+			return invocation.Proceed(ctx, query, args...)
+		},
+	})
 	if err != nil {
 		t.Error(err)
 		return
@@ -128,11 +134,53 @@ func TestExec(t *testing.T) {
 		return
 	} else {
 		assert.Equal(t, int64(1), res.RowsAffected())
+		assert.True(t, called)
+	}
+}
+
+func TestExecConn(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	ctx := context.Background()
+	config, err := pgx.ParseConfig(connURL)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	called := false
+	conn, err := ConnectConfig(ctx, config, &ConnHook{
+		Exec: func(invocation *ConnExec, ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
+			called = true
+			return invocation.Proceed(ctx, query, args...)
+		},
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer conn.Close(ctx)
+
+	if res, err := conn.Exec(ctx, table.insert, &fixture{"111", "bbbb"}); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, int64(1), res.RowsAffected())
+		assert.True(t, called)
 	}
 }
 
 func TestFind(t *testing.T) {
-	table, err := setup(t)
+	times := 0
+	table, err := setup(t, DBHook{
+		Find: func(invocation *DBFind, ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+			times++
+			return invocation.Proceed(ctx, dest, query, args...)
+		},
+	})
 	if err != nil {
 		t.Error(err)
 		return
@@ -162,10 +210,74 @@ func TestFind(t *testing.T) {
 		return
 	}
 	assert.Equal(t, 3, count)
+	assert.Equal(t, 3, times)
+}
+
+func TestFindConn(t *testing.T) {
+	if table, err := setup(t); err != nil {
+		t.Error(err)
+		return
+	} else {
+		if err := insertData(t, table); err != nil {
+			t.Error(err)
+			return
+		}
+		config, err := pgx.ParseConfig(connURL)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		calledParse := false
+		calledRes := false
+		calledTra := false
+		called := false
+		ctx := context.Background()
+		conn, err := ConnectConfig(ctx, config, &kra.CoreHook{
+			Parse: func(invocation *kra.CoreParse, query string) (kra.QueryAnalyzer, error) {
+				calledParse = true
+				return invocation.Proceed(query)
+			},
+			NewResolver: func(invocation *kra.CoreNewResolver, args ...interface{}) (kra.ValueResolver, error) {
+				calledRes = true
+				return invocation.Proceed(args...)
+			},
+			NewTransformer: func(invocation *kra.CoreNewTransformer) kra.Transformer {
+				calledTra = true
+				return invocation.Proceed()
+			},
+		}, &ConnHook{
+			Find: func(invocation *ConnFind, ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+				called = true
+				return invocation.Proceed(ctx, dest, query, args...)
+			},
+		})
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer conn.Close(ctx)
+
+		var dst fixture
+		if err := conn.Find(ctx, &dst, table.find, "222"); err != nil {
+			t.Error(err)
+			return
+		}
+		assert.Equal(t, "bbbb", dst.TestValue)
+		assert.True(t, calledParse)
+		assert.True(t, calledRes)
+		assert.True(t, calledTra)
+		assert.True(t, called)
+	}
 }
 
 func TestFindAll(t *testing.T) {
-	table, err := setup(t)
+	called := false
+	table, err := setup(t, DBHook{
+		FindAll: func(invocation *DBFindAll, ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+			called = true
+			return invocation.Proceed(ctx, dest, query, args...)
+		},
+	})
 	if err != nil {
 		t.Error(err)
 		return
@@ -183,6 +295,48 @@ func TestFindAll(t *testing.T) {
 
 	assert.Equal(t, 3, len(dstAry))
 	assert.Equal(t, "111", dstAry[0].TestKey)
+	assert.True(t, called)
+}
+
+func TestFindAllConn(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	} else {
+		if err := insertData(t, table); err != nil {
+			t.Error(err)
+			return
+		}
+		config, err := pgx.ParseConfig(connURL)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		called := false
+		ctx := context.Background()
+		conn, err := ConnectConfig(ctx, config, &ConnHook{
+			FindAll: func(invocation *ConnFindAll, ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+				called = true
+				return invocation.Proceed(ctx, dest, query, args...)
+			},
+		})
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer conn.Close(ctx)
+
+		var dstAry []*fixture
+		if err := conn.FindAll(ctx, &dstAry, table.findAll); err != nil {
+			t.Error(err)
+			return
+		}
+
+		assert.Equal(t, 3, len(dstAry))
+		assert.Equal(t, "111", dstAry[0].TestKey)
+		assert.True(t, called)
+	}
 }
 
 func TestFindAllMap(t *testing.T) {
@@ -207,7 +361,19 @@ func TestFindAllMap(t *testing.T) {
 }
 
 func TestPrepare_Exec(t *testing.T) {
-	table, err := setup(t)
+	pCalled := false
+	eCalled := false
+	table, err := setup(t, DBHook{
+		Prepare: func(invocation *DBPrepare, ctx context.Context, query string, examples ...interface{}) (*PooledStmt, error) {
+			pCalled = true
+			return invocation.Proceed(ctx, query)
+		},
+	}, StmtHook{
+		Exec: func(invocation *StmtExec, ctx context.Context, args ...interface{}) (pgconn.CommandTag, error) {
+			eCalled = true
+			return invocation.Proceed(ctx, args...)
+		},
+	})
 	if err != nil {
 		t.Error(err)
 		return
@@ -228,11 +394,80 @@ func TestPrepare_Exec(t *testing.T) {
 		return
 	} else {
 		assert.Equal(t, int64(1), res.RowsAffected())
+		assert.True(t, pCalled)
+		assert.True(t, eCalled)
+	}
+}
+
+func TestQueryConn(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = insertData(t, table)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	config, err := pgx.ParseConfig(connURL)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	called := false
+
+	ctx := context.Background()
+	conn, err := ConnectConfig(ctx, config, &ConnHook{
+		Query: func(invocation *ConnQuery, ctx context.Context, query string, args ...interface{}) (*Rows, error) {
+			called = true
+			return invocation.Proceed(ctx, query, args...)
+		},
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer conn.Close(ctx)
+
+	if rows, err := conn.Query(ctx, table.find, "111"); err != nil {
+		t.Error(err)
+		return
+	} else if rows.rows.Next() == false {
+		t.Fail()
+	} else {
+		var data fixture
+		sErr := rows.Scan(&data)
+		if sErr != nil {
+			t.Error(sErr)
+			return
+		}
+		assert.Equal(t, "aa", data.TestValue)
+		assert.True(t, called)
 	}
 }
 
 func TestPrepare_Query(t *testing.T) {
-	table, err := setup(t)
+	qCalled := false
+	nCalled := false
+	sCalled := false
+	table, err := setup(t, StmtHook{
+		Query: func(invocation *StmtQuery, ctx context.Context, args ...interface{}) (*Rows, error) {
+			qCalled = true
+			return invocation.Proceed(ctx, args...)
+		},
+	}, RowsHook{
+		Next: func(invocation *RowsNext) bool {
+			nCalled = true
+			return invocation.Proceed()
+		},
+		Scan: func(invocation *RowsScan, dest interface{}) error {
+			sCalled = true
+			return invocation.Proceed(dest)
+		},
+	})
 	if err != nil {
 		t.Error(err)
 		return
@@ -257,7 +492,7 @@ func TestPrepare_Query(t *testing.T) {
 	if rows, err := stmt.Query(ctx, "111"); err != nil {
 		t.Error(err)
 		return
-	} else if rows.rows.Next() == false {
+	} else if rows.Next() == false {
 		t.Fail()
 	} else {
 		var data fixture
@@ -267,11 +502,20 @@ func TestPrepare_Query(t *testing.T) {
 			return
 		}
 		assert.Equal(t, "aa", data.TestValue)
+		assert.True(t, qCalled)
+		assert.True(t, nCalled)
+		assert.True(t, sCalled)
 	}
 }
 
 func TestCopyFrom(t *testing.T) {
-	table, err := setup(t)
+	called := false
+	table, err := setup(t, DBHook{
+		CopyFrom: func(invocation *DBCopyFrom, ctx context.Context, tableName Identifier, rowSrc interface{}) (int64, error) {
+			called = true
+			return invocation.Proceed(ctx, tableName, rowSrc)
+		},
+	})
 	if err != nil {
 		t.Error(err)
 		return
@@ -288,6 +532,58 @@ func TestCopyFrom(t *testing.T) {
 		return
 	} else {
 		assert.Equal(t, int64(3), count)
+		assert.True(t, called)
+	}
+}
+
+func TestCopyFromConn(t *testing.T) {
+	table, err := setup(t)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	data := []fixture{
+		{"111", "aa"},
+		{"222", "bbbb"},
+		{"333", "ccc"},
+	}
+	config, err := pgx.ParseConfig(connURL)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	calledPing := false
+	calledCP := false
+	ctx := context.Background()
+	conn, err := ConnectConfig(ctx, config, &ConnHook{
+		Ping: func(invocation *ConnPing, ctx context.Context) error {
+			calledPing = true
+			return invocation.Proceed(ctx)
+		},
+		CopyFrom: func(invocation *ConnCopyFrom, ctx context.Context, tableName Identifier, rowSrc interface{}) (int64, error) {
+			calledCP = true
+			return invocation.Proceed(ctx, tableName, rowSrc)
+		},
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer conn.Close(ctx)
+
+	if err := conn.Ping(ctx); err != nil {
+		t.Error(err)
+		return
+	}
+
+	if count, err := conn.CopyFrom(ctx, Identifier{table.name}, data); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, int64(3), count)
+		assert.True(t, calledPing)
+		assert.True(t, calledCP)
 	}
 }
 
@@ -357,6 +653,84 @@ func TestCopyFrom_NoStruct(t *testing.T) {
 		assert.ErrorIs(t, err, kra.ErrUnsupportedValueType)
 	} else {
 		t.Fail()
+	}
+}
+
+func TestTx(t *testing.T) {
+	bCalled := false
+	cfCalled := false
+	cCalled := false
+	table, err := setup(t, DBHook{
+		BeginTx: func(invocation *DBBeginTx, ctx context.Context, txOptions pgx.TxOptions) (*Tx, error) {
+			bCalled = true
+			return invocation.Proceed(ctx, txOptions)
+		},
+	}, TxHook{
+		CopyFrom: func(invocation *TxCopyFrom, ctx context.Context, tableName Identifier, rowSrc interface{}) (int64, error) {
+			cfCalled = true
+			return invocation.Proceed(ctx, tableName, rowSrc)
+		},
+		Commit: func(invocation *TxCommit, ctx context.Context) error {
+			cCalled = true
+			return invocation.Proceed(ctx)
+		},
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	data := []fixture{
+		{"111", "aa"},
+		{"222", "bbbb"},
+		{"333", "ccc"},
+	}
+
+	if tx, err := table.db.Begin(context.Background()); err != nil {
+		t.Error(err)
+	} else if count, err := tx.CopyFrom(context.Background(), Identifier{table.name}, data); err != nil {
+		t.Error(err)
+	} else if err := tx.Commit(context.Background()); err != nil {
+		t.Error(err)
+	} else {
+		assert.Equal(t, int64(3), count)
+		assert.True(t, bCalled)
+		assert.True(t, cfCalled)
+		assert.True(t, cCalled)
+	}
+}
+
+func TestTx_Rollback(t *testing.T) {
+	called := false
+	table, err := setup(t, TxHook{
+		Rollback: func(invocation *TxRollback, ctx context.Context) error {
+			called = true
+			return invocation.Proceed(ctx)
+		},
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	data := []fixture{
+		{"111", "aa"},
+		{"222", "bbbb"},
+		{"333", "ccc"},
+	}
+	var count int
+	ctx := context.Background()
+	if tx, err := table.db.Begin(ctx); err != nil {
+		t.Error(err)
+	} else if _, err := tx.CopyFrom(ctx, Identifier{table.name}, data); err != nil {
+		t.Error(err)
+	} else if err := tx.Rollback(ctx); err != nil {
+		t.Error(err)
+	} else if err := table.db.Find(ctx, &count, table.count); err != nil {
+		t.Error(err)
+	} else {
+		assert.Equal(t, 0, count)
+		assert.True(t, called)
 	}
 }
 
