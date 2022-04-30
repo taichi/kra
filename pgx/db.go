@@ -39,7 +39,7 @@ func OpenConfig(ctx context.Context, config *pgxpool.Config, hooks ...interface{
 	if pool, err := pgxpool.ConnectConfig(ctx, config); err != nil {
 		return nil, err
 	} else {
-		return NewDB(pool, NewCore(kra.PostgreSQL, hooks...)), nil
+		return NewDB(pool, NewCore(kra.NewCore(kra.PostgreSQL), hooks...)), nil
 	}
 }
 
@@ -61,7 +61,7 @@ func ConnectConfig(ctx context.Context, connConfig *pgx.ConnConfig, hooks ...int
 	if conn, err := pgx.ConnectConfig(ctx, connConfig); err != nil {
 		return nil, err
 	} else {
-		return NewConn(conn, NewCore(kra.PostgreSQL, hooks...)), nil
+		return NewConn(conn, NewCore(kra.NewCore(kra.PostgreSQL), hooks...)), nil
 	}
 }
 
