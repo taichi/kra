@@ -7,7 +7,7 @@ require (
 	github.com/jackc/pgconn v1.12.1
 	github.com/jackc/pgtype v1.11.0
 	github.com/jackc/pgx/v4 v4.16.1
-	github.com/stretchr/testify v1.7.5
+	github.com/stretchr/testify v1.8.0
 )
 
 require (
