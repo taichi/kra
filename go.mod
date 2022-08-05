@@ -3,7 +3,7 @@ module github.com/taichi/kra
 go 1.18
 
 require (
-	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220722194653-14703f21b580
+	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220804214150-8b0cc382067f
 	github.com/jackc/pgconn v1.12.1
 	github.com/jackc/pgtype v1.11.0
 	github.com/jackc/pgx/v4 v4.16.1
