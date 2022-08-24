@@ -1,6 +1,3 @@
 {
-  "recommendations": [
-    "mike-lischke.vscode-antlr4",
-    "golang.go"
-  ]
+  "recommendations": ["golang.go"]
 }
