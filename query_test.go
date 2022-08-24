@@ -261,3 +261,21 @@ func TestINOperator_WithoutExpansion_DEC_Static(t *testing.T) {
 		assert.Equal(t, []interface{}{"bar", "foo", "baz"}, vars)
 	}
 }
+
+func TestINOperator_WithoutExpansion_SubQuery(t *testing.T) {
+	if query, err := NewQuery("SELECT foo, bar FROM baz WHERE foo IN (SELECT kind FROM films WHERE kind = 'CDR' OR kind = 'ZDE')"); err != nil {
+		t.Error(err)
+		return
+	} else if raw, _, err := query.Analyze(&TestVR{
+		map[string]interface{}{
+			"1": "foo",
+			"2": "bar",
+			"3": "baz",
+		},
+	}); err != nil {
+		t.Error(err)
+		return
+	} else {
+		assert.Equal(t, "SELECT foo , bar FROM baz WHERE foo IN (SELECT kind FROM films WHERE kind = 'CDR' OR kind = 'ZDE')", raw)
+	}
+}

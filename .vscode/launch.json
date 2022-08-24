@@ -5,7 +5,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "ANTLR4",
+      "name": "Basic",
       "type": "antlr-debug",
       "request": "launch",
       "input": "test/select.sql",
@@ -13,6 +13,16 @@
       "startRule": "parse",
       "printParseTree": true,
       "visualParseTree": true
-  }
+    },
+    {
+      "name": "SubQuery",
+      "type": "antlr-debug",
+      "request": "launch",
+      "input": "test/sub.sql",
+      "grammar": "parser/Named.g4",
+      "startRule": "parse",
+      "printParseTree": true,
+      "visualParseTree": true
+    }
   ]
 }
