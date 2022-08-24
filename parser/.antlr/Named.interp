@@ -45,7 +45,7 @@ parse
 stmt
 inExpr
 parameter
-namedParamter
+namedParameter
 qmarkParameter
 decParameter
 staticParameter

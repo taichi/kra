@@ -45,9 +45,9 @@ stmt: (inExpr | anyStmtParts | parameter)+;
 
 inExpr: IN OPEN_PAREN parameter (COMMA parameter)* CLOSE_PAREN;
 
-parameter: namedParamter | qmarkParameter | decParameter | staticParameter;
+parameter: namedParameter | qmarkParameter | decParameter | staticParameter;
 
-namedParamter: (AT | COLON) IDENTIFIER (DOT IDENTIFIER)*;
+namedParameter: (AT | COLON) IDENTIFIER (DOT IDENTIFIER)*;
 
 qmarkParameter: QMARK;
 
