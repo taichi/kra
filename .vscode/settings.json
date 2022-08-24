@@ -41,12 +41,8 @@
     "local": "github.com/taichi/kra"
   },
   "go.buildTags": "test",
-  "go.testFlags": [
-    "-v"
-  ],
-  "cSpell.ignoreWords": [
-    "qmark"
-  ],
+  "go.testFlags": ["-v"],
+  "cSpell.ignoreWords": ["qmark"],
   "go.formatTool": "goimports",
-  "go.lintTool": "golangci-lint",
+  "go.lintTool": "golangci-lint"
 }
