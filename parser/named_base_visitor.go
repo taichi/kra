@@ -24,7 +24,7 @@ func (v *BaseNamedVisitor) VisitParameter(ctx *ParameterContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseNamedVisitor) VisitNamedParamter(ctx *NamedParamterContext) interface{} {
+func (v *BaseNamedVisitor) VisitNamedParameter(ctx *NamedParameterContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

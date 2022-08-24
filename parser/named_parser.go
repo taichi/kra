@@ -56,7 +56,7 @@ func namedParserInit() {
 		"AT", "COLON", "SEMI", "DOT", "STAR", "ANY_SYMBOL",
 	}
 	staticData.ruleNames = []string{
-		"parse", "stmt", "inExpr", "parameter", "namedParamter", "qmarkParameter",
+		"parse", "stmt", "inExpr", "parameter", "namedParameter", "qmarkParameter",
 		"decParameter", "staticParameter", "anyStmtParts",
 	}
 	staticData.predictionContextCache = antlr.NewPredictionContextCache()
@@ -163,7 +163,7 @@ const (
 	NamedParserRULE_stmt            = 1
 	NamedParserRULE_inExpr          = 2
 	NamedParserRULE_parameter       = 3
-	NamedParserRULE_namedParamter   = 4
+	NamedParserRULE_namedParameter  = 4
 	NamedParserRULE_qmarkParameter  = 5
 	NamedParserRULE_decParameter    = 6
 	NamedParserRULE_staticParameter = 7
@@ -815,10 +815,10 @@ func NewParameterContext(parser antlr.Parser, parent antlr.ParserRuleContext, in
 
 func (s *ParameterContext) GetParser() antlr.Parser { return s.parser }
 
-func (s *ParameterContext) NamedParamter() INamedParamterContext {
+func (s *ParameterContext) NamedParameter() INamedParameterContext {
 	var t antlr.RuleContext
 	for _, ctx := range s.GetChildren() {
-		if _, ok := ctx.(INamedParamterContext); ok {
+		if _, ok := ctx.(INamedParameterContext); ok {
 			t = ctx.(antlr.RuleContext)
 			break
 		}
@@ -828,7 +828,7 @@ func (s *ParameterContext) NamedParamter() INamedParamterContext {
 		return nil
 	}
 
-	return t.(INamedParamterContext)
+	return t.(INamedParameterContext)
 }
 
 func (s *ParameterContext) QmarkParameter() IQmarkParameterContext {
@@ -928,7 +928,7 @@ func (p *NamedParser) Parameter() (localctx IParameterContext) {
 		p.EnterOuterAlt(localctx, 1)
 		{
 			p.SetState(55)
-			p.NamedParamter()
+			p.NamedParameter()
 		}
 
 	case NamedParserQMARK:
@@ -959,92 +959,92 @@ func (p *NamedParser) Parameter() (localctx IParameterContext) {
 	return localctx
 }
 
-// INamedParamterContext is an interface to support dynamic dispatch.
-type INamedParamterContext interface {
+// INamedParameterContext is an interface to support dynamic dispatch.
+type INamedParameterContext interface {
 	antlr.ParserRuleContext
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
-	// IsNamedParamterContext differentiates from other interfaces.
-	IsNamedParamterContext()
+	// IsNamedParameterContext differentiates from other interfaces.
+	IsNamedParameterContext()
 }
 
-type NamedParamterContext struct {
+type NamedParameterContext struct {
 	*antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
-func NewEmptyNamedParamterContext() *NamedParamterContext {
-	var p = new(NamedParamterContext)
+func NewEmptyNamedParameterContext() *NamedParameterContext {
+	var p = new(NamedParameterContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = NamedParserRULE_namedParamter
+	p.RuleIndex = NamedParserRULE_namedParameter
 	return p
 }
 
-func (*NamedParamterContext) IsNamedParamterContext() {}
+func (*NamedParameterContext) IsNamedParameterContext() {}
 
-func NewNamedParamterContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *NamedParamterContext {
-	var p = new(NamedParamterContext)
+func NewNamedParameterContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *NamedParameterContext {
+	var p = new(NamedParameterContext)
 
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = NamedParserRULE_namedParamter
+	p.RuleIndex = NamedParserRULE_namedParameter
 
 	return p
 }
 
-func (s *NamedParamterContext) GetParser() antlr.Parser { return s.parser }
+func (s *NamedParameterContext) GetParser() antlr.Parser { return s.parser }
 
-func (s *NamedParamterContext) AllIDENTIFIER() []antlr.TerminalNode {
+func (s *NamedParameterContext) AllIDENTIFIER() []antlr.TerminalNode {
 	return s.GetTokens(NamedParserIDENTIFIER)
 }
 
-func (s *NamedParamterContext) IDENTIFIER(i int) antlr.TerminalNode {
+func (s *NamedParameterContext) IDENTIFIER(i int) antlr.TerminalNode {
 	return s.GetToken(NamedParserIDENTIFIER, i)
 }
 
-func (s *NamedParamterContext) AT() antlr.TerminalNode {
+func (s *NamedParameterContext) AT() antlr.TerminalNode {
 	return s.GetToken(NamedParserAT, 0)
 }
 
-func (s *NamedParamterContext) COLON() antlr.TerminalNode {
+func (s *NamedParameterContext) COLON() antlr.TerminalNode {
 	return s.GetToken(NamedParserCOLON, 0)
 }
 
-func (s *NamedParamterContext) AllDOT() []antlr.TerminalNode {
+func (s *NamedParameterContext) AllDOT() []antlr.TerminalNode {
 	return s.GetTokens(NamedParserDOT)
 }
 
-func (s *NamedParamterContext) DOT(i int) antlr.TerminalNode {
+func (s *NamedParameterContext) DOT(i int) antlr.TerminalNode {
 	return s.GetToken(NamedParserDOT, i)
 }
 
-func (s *NamedParamterContext) GetRuleContext() antlr.RuleContext {
+func (s *NamedParameterContext) GetRuleContext() antlr.RuleContext {
 	return s
 }
 
-func (s *NamedParamterContext) ToStringTree(ruleNames []string, recog antlr.Recognizer) string {
+func (s *NamedParameterContext) ToStringTree(ruleNames []string, recog antlr.Recognizer) string {
 	return antlr.TreesStringTree(s, ruleNames, recog)
 }
 
-func (s *NamedParamterContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
+func (s *NamedParameterContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 	switch t := visitor.(type) {
 	case NamedVisitor:
-		return t.VisitNamedParamter(s)
+		return t.VisitNamedParameter(s)
 
 	default:
 		return t.VisitChildren(s)
 	}
 }
 
-func (p *NamedParser) NamedParamter() (localctx INamedParamterContext) {
+func (p *NamedParser) NamedParameter() (localctx INamedParameterContext) {
 	this := p
 	_ = this
 
-	localctx = NewNamedParamterContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 8, NamedParserRULE_namedParamter)
+	localctx = NewNamedParameterContext(p, p.GetParserRuleContext(), p.GetState())
+	p.EnterRule(localctx, 8, NamedParserRULE_namedParameter)
 	var _la int
 
 	defer func() {

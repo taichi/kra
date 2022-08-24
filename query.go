@@ -196,7 +196,7 @@ func (visitor *ParameterVisitor) VisitParameter(ctx *parser.ParameterContext) in
 	return VisitChildren(visitor, ctx)
 }
 
-func (visitor *ParameterVisitor) VisitNamedParamter(ctx *parser.NamedParamterContext) interface{} {
+func (visitor *ParameterVisitor) VisitNamedParameter(ctx *parser.NamedParameterContext) interface{} {
 	visitor.named = append(visitor.named, ctx.GetText())
 	return nil
 }
@@ -249,7 +249,7 @@ func (collector *PartsCollector) VisitAnyStmtParts(ctx *parser.AnyStmtPartsConte
 	})
 }
 
-func (collector *PartsCollector) VisitNamedParamter(ctx *parser.NamedParamterContext) interface{} {
+func (collector *PartsCollector) VisitNamedParameter(ctx *parser.NamedParameterContext) interface{} {
 	collector.Use(NAMED)
 	return collector.Add(func() (StmtPart, error) {
 		return NewNamedParameterPart(ctx.GetText())

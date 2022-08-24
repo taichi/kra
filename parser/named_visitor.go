@@ -34,8 +34,8 @@ type NamedVisitor interface {
 	// Visit a parse tree produced by NamedParser#parameter.
 	VisitParameter(ctx *ParameterContext) interface{}
 
-	// Visit a parse tree produced by NamedParser#namedParamter.
-	VisitNamedParamter(ctx *NamedParamterContext) interface{}
+	// Visit a parse tree produced by NamedParser#namedParameter.
+	VisitNamedParameter(ctx *NamedParameterContext) interface{}
 
 	// Visit a parse tree produced by NamedParser#qmarkParameter.
 	VisitQmarkParameter(ctx *QmarkParameterContext) interface{}
