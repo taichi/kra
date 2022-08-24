@@ -43,7 +43,7 @@ parse: stmt (SEMI+ stmt)* SEMI*;
 
 stmt: (inExpr | anyStmtParts | parameter)+;
 
-inExpr: IN OPEN_PAREN parameter (COMMA parameter)* CLOSE_PAREN;
+inExpr: IN OPEN_PAREN ((parameter (COMMA parameter)*) | stmt) CLOSE_PAREN;
 
 parameter: namedParameter | qmarkParameter | decParameter | staticParameter;
 
