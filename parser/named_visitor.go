@@ -1,4 +1,4 @@
-// Code generated from c:\dev\repo\go\kra\parser\Named.g4 by ANTLR 4.10.1. DO NOT EDIT.
+// Code generated from C:/dev/repo/go/kra/parser\Named.g4 by ANTLR 4.10.1. DO NOT EDIT.
 
 package parser // Named
 

@@ -223,19 +223,49 @@ func (visitor *ParameterVisitor) VisitStaticParameter(ctx *parser.StaticParamete
 }
 
 func (collector *PartsCollector) VisitInExpr(ctx *parser.InExprContext) interface{} {
-	pVisitor := ParameterVisitor{}
-	pVisitor.parent = collector
-	ctx.Accept(&pVisitor)
-	if 0 < len(pVisitor.named) {
-		// IN句の一部にnamed parameterが含まれている場合のみ、BindVarを自動的に決める
-		collector.dynamicParameters = append(collector.dynamicParameters, pVisitor.named...)
-		return collector.Add(func() (StmtPart, error) {
-			return NewInPart(ctx.IN().GetText(), pVisitor.named[0])
-		})
+	if stmt := ctx.Stmt(); stmt != nil {
+		visitor := new(PartsCollector)
+		if err := stmt.Accept(visitor); err != nil {
+			return err
+		}
+		collector.Use(visitor.style)
+		if part, err := NewStringPart(ctx.IN().GetText()); err != nil {
+			return err
+		} else {
+			collector.parts = append(collector.parts, part)
+		}
+		if part, err := NewStringPart(ctx.OPEN_PAREN().GetText()); err != nil {
+			return err
+		} else {
+			collector.parts = append(collector.parts, part)
+		}
+		for _, part := range visitor.parts {
+			collector.parts = append(collector.parts, part)
+		}
+		if part, err := NewStringPart(ctx.CLOSE_PAREN().GetText()); err != nil {
+			return err
+		} else {
+			collector.parts = append(collector.parts, part)
+		}
+		for _, dp := range visitor.dynamicParameters {
+			collector.dynamicParameters = append(collector.dynamicParameters, dp)
+		}
+		return nil
 	} else {
-		return collector.Add(func() (StmtPart, error) {
-			return NewStaticInPart(ctx.IN().GetText(), pVisitor.other)
-		})
+		pVisitor := ParameterVisitor{}
+		pVisitor.parent = collector
+		ctx.Accept(&pVisitor)
+		if 0 < len(pVisitor.named) {
+			// IN句の一部にnamed parameterが含まれている場合のみ、BindVarを自動的に決める
+			collector.dynamicParameters = append(collector.dynamicParameters, pVisitor.named...)
+			return collector.Add(func() (StmtPart, error) {
+				return NewInPart(ctx.IN().GetText(), pVisitor.named[0])
+			})
+		} else {
+			return collector.Add(func() (StmtPart, error) {
+				return NewStaticInPart(ctx.IN().GetText(), pVisitor.other)
+			})
+		}
 	}
 }
 
