@@ -23,6 +23,5 @@ func Parse(src string) IParseContext {
 	stream := antlr.NewCommonTokenStream(lexer, 0)
 	parser := NewNamedParser(stream)
 	parser.BuildParseTrees = true
-	parser.AddErrorListener(antlr.NewDiagnosticErrorListener(true))
 	return parser.Parse()
 }
