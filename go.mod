@@ -6,9 +6,9 @@ require (
 	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220826213629-cd8f367ca010
 	github.com/jackc/pgconn v1.14.0
 	github.com/jackc/pgtype v1.14.0
-	github.com/jackc/pgx/v4 v4.18.0
-	github.com/jackc/pgx/v5 v5.3.0
-	github.com/stretchr/testify v1.8.1
+	github.com/jackc/pgx/v4 v4.18.1
+	github.com/jackc/pgx/v5 v5.3.1
+	github.com/stretchr/testify v1.8.2
 )
 
 require (
